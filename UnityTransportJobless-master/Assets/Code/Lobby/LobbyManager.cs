@@ -213,12 +213,11 @@ namespace Assets.Code
         private void StartGame()
         {
             if (thisClient.Host)
-            {
-                // set the host & client gamemanager to go on
-            } else
-            {
-                // set the client gamemanager to go on
+            { 
+                gameObject.GetComponent<HostGameManager>().enabled = true;
             }
+            gameObject.GetComponent<ClientGameManager>().enabled = true;
+            gameObject.GetComponent<ClientGameManager>().ThisClient = thisClient;
         }
     }
 }

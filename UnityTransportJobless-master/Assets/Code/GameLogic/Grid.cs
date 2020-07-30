@@ -3,6 +3,8 @@ using UnityEngine;
 
 public class Grid : MonoBehaviour
 {
+    public GameObject nodeObject;
+    public GameObject wallObject;
     
     public Vector2 gridWorldSize;
     public float nodeRadius;
@@ -24,29 +26,24 @@ public class Grid : MonoBehaviour
 
     public void CreateGrid()
     {
+
+        
         NodeArray = new Node[gridSizeX, gridSizeY];
-        Vector3 bottomLeft = transform.position - Vector3.right * gridWorldSize.x / 2 - Vector3.up * gridWorldSize.y / 2;
+        //Vector3 bottomLeft = transform.position - Vector3.right * gridWorldSize.x / 2 - Vector3.up * gridWorldSize.y / 2;
         for (int x = 0; x < gridSizeX; x++)
         {
             for (int y = 0; y < gridSizeY; y++)
             {
-                Vector3 worldPoint = bottomLeft + Vector3.right * (x * nodeDiameter + nodeRadius) + Vector3.up * (y * nodeDiameter + nodeRadius);
-                NodeArray[x, y] = new Node(worldPoint, x, y);
+                //Vector3 worldPoint = bottomLeft + Vector3.right * (x * nodeDiameter + nodeRadius) + Vector3.up * (y * nodeDiameter + nodeRadius);
+                NodeArray[x, y] = new Node(new Vector3(x, y, 0), x, y);
                 NodeArray[x, y].walls = Wall.EAST | Wall.SOUTH | Wall.NORTH | Wall.WEST; // this sets all walls
-                //if (x == 0)
-                //    NodeArray[x, y].walls |= Wall.WEST;
-                //if (x == gridSizeX - 1)
-                //    NodeArray[x, y].walls |= Wall.EAST;
-                //if (y == 0)
-                //    NodeArray[x, y].walls |= Wall.SOUTH;
-                //if (y == gridSizeY - 1)
-                //    NodeArray[x, y].walls |= Wall.NORTH;
             }
         }
 
         Stack<Node> nodeStack = new Stack<Node>(); // Last in, first out
         List<Node> checkedNodes = new List<Node>();
         nodeStack.Push(NodeArray[0, 0]);
+        
         Node currentNode;
         while (nodeStack.Count > 0)
         {
@@ -66,9 +63,7 @@ public class Grid : MonoBehaviour
             }
         }
 
-        //Debug.Log(NodeArray[0, 0].walls);
-        //Debug.Log(NodeArray[gridSizeX - 1, gridSizeY - 1].walls);
-        //Debug.Log(NodeArray[4, 7].walls);
+        SpawnMazeObjects();
     }
 
     private List<Node> GetUnvisitedNeighbourNodes(List<Node> neighbouringNodesList, List<Node> checkedNodes, Stack<Node> nodeStack)
@@ -97,13 +92,14 @@ public class Grid : MonoBehaviour
             {
                 if (x == 0 && y == 0)
                     continue;
-
                 checkX = thisNode.gridX + x;
                 checkY = thisNode.gridY + y;
-                if (checkX >= 0 && checkX < gridSizeX && checkY >= 0 && checkY < gridSizeY) // if it's within
+                if (checkX < 0 || checkX >= gridSizeX || checkY < 0 || checkY >= gridSizeY || Mathf.Abs(x) == Mathf.Abs(y))
                 {
-                    neighbouringNodesList.Add(NodeArray[checkX, checkY]);
+                    // if the checkX or checkY are outside of the grid, or if the nodes are diagonal, then skip them
+                    continue;
                 }
+                neighbouringNodesList.Add(NodeArray[checkX, checkY]);
             }
         }
         return neighbouringNodesList;
@@ -111,12 +107,11 @@ public class Grid : MonoBehaviour
 
     private void RemoveWallBetweenNodes(Node nodeA, Node nodeB)
     {
-        //int amountWallsNodeA = nodeA.GetWalls();
-        Vector2Int direction = new Vector2Int(nodeB.gridX, nodeB.gridY) - new Vector2Int(nodeA.gridX, nodeA.gridX);
+        Vector2Int direction = new Vector2Int(nodeB.gridX, nodeB.gridY) - new Vector2Int(nodeA.gridX, nodeA.gridY);
         if(direction.x != 0) // if NodeA and NodeB are not on the same x coordinate
         {
-            // if NodeA's direction is 1, than it lies to the west of NodeB. It's east wall needs to go.
-            // If it is -1, than the node lies to the east of NodeB, in which case the wall on the west side needs to go.
+            // if NodeA's direction is 1, then it lies to the west of NodeB. It's east wall needs to go.
+            // If it is -1, then the node lies to the east of NodeB, in which case the wall on the west side needs to go.
             nodeA.RemoveWall(direction.x > 0 ? Wall.EAST : Wall.WEST); 
             nodeB.RemoveWall(direction.x > 0 ? Wall.WEST : Wall.EAST); 
         }
@@ -127,9 +122,46 @@ public class Grid : MonoBehaviour
         }
     }
 
+    private void SpawnMazeObjects()
+    {
+        // Create a parent gameobject to orden the hierarchy
+        GameObject gridParent = new GameObject();
+        gridParent.transform.position = Vector3.zero;
+        gridParent.name = "Grid Parent";
+
+        if (NodeArray != null)
+        {
+            foreach (Node n in NodeArray)
+            {
+                GameObject node = Instantiate(nodeObject, n.pos, Quaternion.identity, gridParent.transform);
+                if ((n.walls & Wall.NORTH) != 0) // if n has a wall north
+                {
+                    GameObject wallN = Instantiate(wallObject, n.pos + new Vector3(0, nodeRadius), Quaternion.identity, node.transform);
+                  
+                    wallN.transform.localScale = new Vector3(nodeDiameter, nodeDiameter * .1f, .2f);
+                }
+                if ((n.walls & Wall.EAST) != 0)
+                {
+                    GameObject wallE = Instantiate(wallObject, n.pos + new Vector3(nodeRadius, 0), Quaternion.identity, node.transform);
+                    wallE.transform.localScale = new Vector3(nodeDiameter * .1f, nodeDiameter, .2f);           
+                }
+                if ((n.walls & Wall.WEST) != 0)
+                {
+                    GameObject wallW = Instantiate(wallObject, n.pos + new Vector3(-nodeRadius, 0), Quaternion.identity, node.transform);
+                    wallW.transform.localScale = new Vector3(nodeDiameter * .1f, nodeDiameter, .2f);
+                }
+                if ((n.walls & Wall.SOUTH) != 0)
+                {
+                    GameObject wallS = Instantiate(wallObject, n.pos + new Vector3(0, -nodeRadius), Quaternion.identity, node.transform);
+                    wallS.transform.localScale = new Vector3(nodeDiameter, nodeDiameter * .1f, .2f);
+                }
+            }
+        }
+    }
+
     private void OnDrawGizmos()
     {
-        Gizmos.DrawWireCube(transform.position, new Vector3(gridWorldSize.x, gridWorldSize.y, .1f));
+        Gizmos.DrawWireCube(transform.position, new Vector3(gridWorldSize.x, gridWorldSize.y, .01f));
         
         if (NodeArray != null)
         {

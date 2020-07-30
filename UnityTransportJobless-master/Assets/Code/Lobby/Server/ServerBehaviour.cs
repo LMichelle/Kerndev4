@@ -50,11 +50,15 @@ public class ServerBehaviour : MonoBehaviour
         }
 
         // Add event listeners
+        #region Lobby Event Listeners
         ServerCallbacks[(int)MessageHeader.MessageType.SetName].AddListener(HandleSetName); // this is how we would add a function to the Setname event. 
         ServerCallbacks[(int)MessageHeader.MessageType.PlayerLeft].AddListener(HandlePlayerLeft);
         ServerCallbacks[(int)MessageHeader.MessageType.StartGame].AddListener(HandleStartGame);
         ServerCallbacks[(int)MessageHeader.MessageType.None].AddListener(HandleNone); // the optional one to keep the connection going in inactivity
+        #endregion
+        #region Game Event Listeners
 
+        #endregion
     }
 
     void Update()
