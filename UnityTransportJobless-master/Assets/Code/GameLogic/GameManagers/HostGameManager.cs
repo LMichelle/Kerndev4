@@ -1,16 +1,20 @@
-﻿using System.Collections.Generic;
+﻿using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 using KernDev.NetworkBehaviour;
 using KernDev.GameLogic;
+using System.Linq;
 
 public class HostGameManager : MonoBehaviour
 {
     public GameObject gridGO;
+    public GameObject testSpawnPlayersGO;
     private GridSystem grid;
     private ServerBehaviour server;
     private List<Client> clientList;
     private Dictionary<Client, Player> AllClientPlayerDictionary = new Dictionary<Client, Player>();
     private Dictionary<Client, Player> ActiveClientPlayerDictionary = new Dictionary<Client, Player>();
+    private Dictionary<Player, Client> ActivePlayerClientDictionary = new Dictionary<Player, Client>();
     private List<Player> playerTurnList = new List<Player>();
     private TurnManager turnManager;
 
@@ -19,6 +23,7 @@ public class HostGameManager : MonoBehaviour
         // Instantiate grid
         Instantiate(gridGO);
         grid = gridGO.GetComponent<GridSystem>();
+        grid.StartGrid();
 
         // Get clients and link them to their new player info
         server = GameObject.FindGameObjectWithTag("Server").GetComponent<ServerBehaviour>();
@@ -28,30 +33,36 @@ public class HostGameManager : MonoBehaviour
             Player player = new Player();
             AllClientPlayerDictionary.Add(c, player);
             ActiveClientPlayerDictionary.Add(c, player);
+            ActivePlayerClientDictionary.Add(player, c);
             playerTurnList.Add(player);
             player.SetStartHP(c.StartHP);
         }
 
         // spawn players in a room
-        SpawnPlayers();
+        StartCoroutine(SpawnPlayers());
 
         // spawn monsters in random rooms
         // spawn treasures in random rooms
-        // determine turn order
-        
+
         // send the turn
+        TurnExecution();
     }
 
-    private void SpawnPlayers()
+    private IEnumerator SpawnPlayers()
     {
         // if the grid isn't ready yet, then keep looping. If it is finished, the next thing can be done.
-        while (!grid.finishedGenerating)
-            break;
+        if (!grid.finishedGenerating)
+        {
+            yield return new WaitForSeconds(.2f);
+        }
+        
         foreach (Player player in AllClientPlayerDictionary.Values)
         {
             player.CurrentNode = grid.GetRandomNode();
-            Debug.Log(player.CurrentNode);
+            //Debug.Log(player.CurrentNode.pos);
+            SpawnTestPlayerObjects(player.CurrentNode.pos);
         }
+        yield break;
     }
 
     private void SpawnMonsters()
@@ -64,6 +75,11 @@ public class HostGameManager : MonoBehaviour
         // Send player turn
         int turn = turnManager.NextTurn(ActiveClientPlayerDictionary.Count);
         Player currentActivePlayer = playerTurnList[turn];
+        Client client;
+        ActivePlayerClientDictionary.TryGetValue(currentActivePlayer, out client); // make this into a struct
+
+        // Send Player turn
+        // Send Room Info
     }
 
     #region Send Game Messages
@@ -73,7 +89,7 @@ public class HostGameManager : MonoBehaviour
     /// </summary>
     private void SendPlayerTurn() 
     { 
-    
+        
     }
 
     /// <summary>
@@ -157,5 +173,10 @@ public class HostGameManager : MonoBehaviour
     }
     #endregion
 
-    
+    // testing stuff
+
+    private void SpawnTestPlayerObjects(Vector3 pos)
+    {
+        Instantiate(testSpawnPlayersGO, pos, testSpawnPlayersGO.transform.rotation);
+    }
 }

@@ -3166,7 +3166,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9a48701fcebcfa243a51ce399cf1df16, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  grid: {fileID: 5574241064367834872, guid: 19bda411bc742e84192906889c95d1f6, type: 3}
+  gridGO: {fileID: 5574241064367834872, guid: 19bda411bc742e84192906889c95d1f6, type: 3}
+  testSpawnPlayersGO: {fileID: 7031989043103648479, guid: 6f2798b448b602c45b4fad84a15572df,
+    type: 3}
 --- !u!114 &713337508
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -5687,7 +5689,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 196.00002, y: -213.99997}
+  m_AnchoredPosition: {x: 196, y: -213.99997}
   m_SizeDelta: {x: 352.00003, y: 100}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &1634764524

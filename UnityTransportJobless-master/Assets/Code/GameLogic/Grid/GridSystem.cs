@@ -19,7 +19,7 @@ namespace KernDev.GameLogic
         //private Transform startPos;
         public bool finishedGenerating = false;
 
-        private void Start()
+        public void StartGrid()
         {
             nodeDiameter = nodeRadius * 2;
             gridSizeX = Mathf.RoundToInt(gridWorldSize.x / nodeDiameter);
@@ -64,8 +64,9 @@ namespace KernDev.GameLogic
                 }
             }
 
-            //SpawnMazeObjects();
+            SpawnMazeObjects();
             finishedGenerating = true;
+            Debug.Log(finishedGenerating);
         }
 
         private List<Node> GetUnvisitedNeighbourNodes(List<Node> neighbouringNodesList, List<Node> checkedNodes, Stack<Node> nodeStack)
