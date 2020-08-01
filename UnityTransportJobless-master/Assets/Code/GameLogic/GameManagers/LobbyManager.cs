@@ -1,6 +1,7 @@
 ﻿using System.Collections;
 using UnityEngine;
 using UnityEngine.UI;
+using KernDev.NetworkBehaviour;
 
 namespace Assets.Code
 {
@@ -97,7 +98,7 @@ namespace Assets.Code
         public void ShowRequestDeniedMessage(MessageConnection messageConnection)
         {
             var message = (messageConnection.messageHeader as RequestDeniedMessage);
-            uint deniedID = message.DeniedMessageID;
+            uint deniedID = message.DeniedMessageID;  
             outputMessagesText.text += $"<color=#E7D0D7>Your request has been denied. Denied Message ID: {deniedID}</color>\n";
         } 
 
@@ -112,7 +113,7 @@ namespace Assets.Code
         public void ShowStartGame(MessageConnection messageConnection)
         {
             var message = (messageConnection.messageHeader as StartGameMessage);
-            //message.StartHP();
+            thisClient.StartHP = message.StartHP;
             outputMessagesText.text += $"The Game is starting in \n";
             StartCoroutine(StartGameCountDown());
         }

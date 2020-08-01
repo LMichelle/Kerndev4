@@ -50,4 +50,3 @@ MonoBehaviour:
   gridWorldSize: {x: 10, y: 10}
   nodeRadius: 0.5
   distanceBetweenNodes: 0
-  startPos: {fileID: 0}

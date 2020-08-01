@@ -9,6 +9,8 @@ public class Client
     public NetworkConnection Connection;
     public bool Host;
 
+    public int StartHP { get; set; } 
+
     public Client(int playerID, string playerName, NetworkConnection connection, bool host)
     {
         PlayerID = playerID;
