@@ -10,12 +10,18 @@ using KernDev.GameLogic;
 public class HostGameManager : MonoBehaviour
 {
     public GameObject fakeMonster;
+    public GameObject treasureGO;
     public GameObject gridGO;
     public GameObject testSpawnPlayersGO;
 
     [SerializeField]
-    private int minPlayerToMonsterDmg, maxPlayerToMonsterDmg, minMonsterToPlayerDmg, maxMonsterToPlayerDmg;
     private int minMonsterHP = 10, maxMonsterHP = 15, minMonsterDmg = 1, maxMonsterDmg = 5;
+    private int minPlayerDmg = 3, maxPlayerDmg = 7;
+    [SerializeField]
+    private int variance = 2;
+    [SerializeField]
+    private int minHealAmt = 2, maxHealAmt = 7;
+    private int minTreasureAmt = 200, maxTreasureAmt = 300;
     
     private GridSystem grid;
     private ServerBehaviour server;
@@ -49,15 +55,15 @@ public class HostGameManager : MonoBehaviour
             ActiveClientPlayerDictionary.Add(c, player);
             ActivePlayerClientDictionary.Add(player, c);
             playerTurnList.Add(player);
-            player.SetStartHP(c.StartHP);
+            player.SetStartValues(c.StartHP);
+            player.DamageAmount = Random.Range(minPlayerDmg, maxPlayerDmg);
         }
 
-        // spawn players in a room
+        // spawn players, monsters and treasures.
         StartCoroutine(SpawnPlayers());
-
-        // spawn monsters in random rooms
         SpawnMonsters();
-        // spawn treasures in random rooms
+        SpawnTreasures();
+        SpawnDungeonExit();
 
         // send the turn
         turnManager.Turn = ActiveClientPlayerDictionary.Count - 1;
@@ -101,10 +107,32 @@ public class HostGameManager : MonoBehaviour
                 CurrentNode = monsterNode
             };
             
-            monster.SetStartHP(Random.Range(minMonsterHP, maxMonsterHP));
+            monster.SetStartValues(Random.Range(minMonsterHP, maxMonsterHP));
             monsterList.Add(monster);
             Instantiate(fakeMonster, monster.CurrentNode.pos, Quaternion.identity); // testing
         }
+    }
+
+    private void SpawnTreasures()
+    {
+        int randomTreasureAmt = Random.Range(10, 30);
+        for (int i = 0; i <= randomTreasureAmt; i++)
+        {
+            Node treasureNode = grid.GetRandomNode();
+            if (treasureNode.Treasure)
+            {
+                while (treasureNode.Treasure)
+                    treasureNode = grid.GetRandomNode();
+            }
+            treasureNode.Treasure = true;
+            Instantiate(treasureGO, treasureNode.pos, Quaternion.identity); // testing
+        }
+    }
+
+    private void SpawnDungeonExit()
+    {
+        Node exitNode = grid.GetRandomNode();
+        exitNode.DungeonExit = true;
     }
 
     private void TurnExecution()
@@ -144,18 +172,35 @@ public class HostGameManager : MonoBehaviour
     private void SendRoomInfo(Node roomNode, Client activeTurnClient)
     {
         // testing
-        int treasureAmt = 300;
+        int treasureAmt = 0;
         Wall openDirection = roomNode.GetOpenDirection();
         byte monster = System.Convert.ToByte(roomNode.Monster);
+        byte exit = System.Convert.ToByte(roomNode.DungeonExit);
+        int numberOfOtherPlayers = 0;
+        List<int> otherPlayerIDs = new List<int>();
+        if (roomNode.Treasure)
+        {
+            treasureAmt = Random.Range(minTreasureAmt, maxTreasureAmt);
+            roomNode.TreasureAmount = treasureAmt;
+        }
+        // Get other Player info
+        //foreach(KeyValuePair<Client, Player> clientPlayerPair in ActiveClientPlayerDictionary)
+        //{
+        //    if (clientPlayerPair.Value.CurrentNode == roomNode && clientPlayerPair.Key != activeTurnClient)
+        //    {
+        //        numberOfOtherPlayers++;
+        //        otherPlayerIDs.Add(clientPlayerPair.Key.PlayerID);
+        //    }
+        //}
+        //byte numberOfOtherPlayersByte = System.Convert.ToByte(numberOfOtherPlayers);
 
-        // Not complete!!
         var roomInfoMessage = new RoomInfoMessage {
             MoveDirections = (byte)openDirection,
             TreasureInRoom = (ushort)treasureAmt,
             ContainsMonster = monster,
-            ContainsExit = 0,
+            ContainsExit = exit,
             NumberOfOtherPlayers = 0,
-            OtherPlayerIDs = {0}
+            OtherPlayerIDs = otherPlayerIDs
         };
         server.SendMessage(roomInfoMessage, activeTurnClient.Connection);
     }
@@ -163,41 +208,71 @@ public class HostGameManager : MonoBehaviour
     /// <summary>
     /// When a player enters a room, send this to all clients in the same room.
     /// </summary>
-    private void SendPlayerEnterRoom()
+    private void SendPlayerEnterRoom(Client receivingClient, Client enteringClient)
     {
-        throw new System.NotImplementedException();
+        var message = new PlayerEnterRoomMessage() {
+            PlayerID = enteringClient.PlayerID
+        };
+        server.SendMessage(message, receivingClient.Connection);
     }
 
     /// <summary>
     /// When a player leaves a room, send this to all clients in the room.
     /// </summary>
-    private void SendPlayerLeaveRoom()
+    private void SendPlayerLeaveRoom(Client receivingClient, Client leavingClient)
     {
-        throw new System.NotImplementedException();
+        var message = new PlayerLeaveRoomMessage() {
+            PlayerID = leavingClient.PlayerID
+        };
+        server.SendMessage(message, receivingClient.Connection);
     }
 
     /// <summary>
     /// Send to the client how much treasure he obtained.
     /// </summary>
-    private void SendObtainTreasure()
+    private void SendObtainTreasure(int amt)
     {
-        throw new System.NotImplementedException();
+        Client activeClient;
+        ActivePlayerClientDictionary.TryGetValue(currentActivePlayer, out activeClient);
+        var message = new ObtainTreasureMessage {
+            Amount = (ushort)amt
+        };
+        server.SendMessage(message, activeClient.Connection);
     }
 
     /// <summary>
     /// Send to all clients when a monster gets hit.
     /// </summary>
-    private void SendHitMonster()
+    private void SendHitMonster(int dmg)
     {
-        throw new System.NotImplementedException();
+        Client activeClient;
+        ActivePlayerClientDictionary.TryGetValue(currentActivePlayer, out activeClient);
+        var message = new HitMonsterMessage() {
+            PlayerID = activeClient.PlayerID,
+            DamageDealt = (ushort)dmg
+        };
+
+        foreach (Client c in clientList)
+        {
+            server.SendMessage(message, c.Connection);
+        }
     }
 
     /// <summary>
     /// Send to all clients when a player gets hit by a monster.
     /// </summary>
-    private void SendHitByMonster()
+    private void SendHitByMonster(int newHP)
     {
-        throw new System.NotImplementedException();
+        Client activeClient;
+        ActivePlayerClientDictionary.TryGetValue(currentActivePlayer, out activeClient);
+        var message = new HitByMonsterMessage() {
+            PlayerID = activeClient.PlayerID,
+            NewHP = (ushort)newHP
+        };
+        foreach (Client c in clientList)
+        {
+            server.SendMessage(message, c.Connection);
+        }
     }
 
     /// <summary>
@@ -205,7 +280,16 @@ public class HostGameManager : MonoBehaviour
     /// </summary>
     private void SendPlayerDefends()
     {
-        throw new System.NotImplementedException();
+        Client activeClient;
+        ActivePlayerClientDictionary.TryGetValue(currentActivePlayer, out activeClient);
+        var message = new PlayerDefendsMessage() { 
+            PlayerID = activeClient.PlayerID, 
+            NewHP = (ushort)currentActivePlayer.CurrentHP 
+        };
+        foreach (Client c in clientList)
+        {
+            server.SendMessage(message, c.Connection);
+        }
     }
 
     /// <summary>
@@ -222,6 +306,7 @@ public class HostGameManager : MonoBehaviour
     private void SendPlayerDies() 
     {
         throw new System.NotImplementedException();
+        // remove client from the 2 active clients dictionary
     }
 
     /// <summary>
@@ -237,8 +322,35 @@ public class HostGameManager : MonoBehaviour
     public void HandleMoveRequest(MessageConnection messageConnection)
     {
         var moveRequestMessage = (messageConnection.messageHeader as MoveRequestMessage);
+        Client movingClient;
+        ActivePlayerClientDictionary.TryGetValue(currentActivePlayer, out movingClient);
+
+        // if the player was in a room with others, then send player leave room
+        foreach (KeyValuePair<Client, Player> clientPlayerPair in ActiveClientPlayerDictionary)
+        {
+            if (clientPlayerPair.Value.CurrentNode == currentActivePlayer.CurrentNode) // his 'old' current node before getting the new one
+            {
+                if (clientPlayerPair.Value == currentActivePlayer) // don't send to ourselves
+                    continue;
+                SendPlayerLeaveRoom(clientPlayerPair.Key, movingClient);
+            }
+        }
+
+        // Get the new room
         Node newRoomNode = grid.GetSpecificNeighbourNode(currentActivePlayer.CurrentNode, (Wall)moveRequestMessage.Direction);
         currentActivePlayer.CurrentNode = newRoomNode;
+        
+
+        // If player enters a room with others, send player enter room
+        foreach(KeyValuePair<Client, Player> keyValuePair in ActiveClientPlayerDictionary) // each active client
+        {
+            if (keyValuePair.Value.CurrentNode == currentActivePlayer.CurrentNode) // if the node is the same
+            {
+                if (keyValuePair.Value == currentActivePlayer) // don't send to ourselves 
+                    continue;
+                SendPlayerEnterRoom(keyValuePair.Key, movingClient);
+            }
+        }
 
         // Player has moved, so now it's the next player's turn.
         TurnExecution();
@@ -261,41 +373,66 @@ public class HostGameManager : MonoBehaviour
         //if (Random.value >= .5f)
             //hitPlayerFirst = true;
 
-        if (hitPlayerFirst)
+        if (hitPlayerFirst) // Player hits first
         {
-            monster.TakeDamage(Random.Range(minPlayerToMonsterDmg, maxPlayerToMonsterDmg));
-            //SendHitMonster();
+            // Monster takes damage
+            int monsterDmg = currentActivePlayer.DamageAmount + Random.Range(-variance, variance);
+            monster.TakeDamage(monsterDmg);
+            SendHitMonster(monsterDmg);
 
-            if (monster.Dead)
+            if (monster.Dead) // if the monster is dead, then next turn
+            {
+                monsterNode.Monster = false;
+                //TurnExecution();
+            }
+            else // Player gets attacked and may die
+            {
+                currentActivePlayer.TakeDamage(monster.DamageAmount + Random.Range(-variance, variance));
+                SendHitByMonster(currentActivePlayer.CurrentHP);
+                if (currentActivePlayer.Dead)
+                {
+                    // send dead message, do other stuff
+                    throw new System.NotImplementedException();
+                }
+            }           
+        }
+        else // Monster hits first
+        {
+            currentActivePlayer.TakeDamage(monster.DamageAmount + Random.Range(-variance, variance));
+            SendHitByMonster(currentActivePlayer.CurrentHP);
+            if (currentActivePlayer.Dead) // if the player dies, then monster can't attack, go to next turn
+            {
+                // send dead message, do other stuff
+                throw new System.NotImplementedException();
+            }
+
+            int monsterDmg = currentActivePlayer.DamageAmount + Random.Range(-variance, variance);
+            monster.TakeDamage(monsterDmg);
+            SendHitMonster(monsterDmg);
+            if (monster.Dead) // if dead, remove the monster from the node
             {
                 monsterNode.Monster = false;
             }
-            else
-            {
-                currentActivePlayer.TakeDamage(Random.Range(minMonsterToPlayerDmg, maxMonsterToPlayerDmg));
-                SendHitByMonster();
-            }           
-        }
-        else
-        {
-            currentActivePlayer.TakeDamage(Random.Range(minMonsterToPlayerDmg, maxMonsterToPlayerDmg));
-            SendHitByMonster();
-
-            monster.TakeDamage(Random.Range(minPlayerToMonsterDmg, maxPlayerToMonsterDmg));
-            SendHitMonster();
         }
 
         // Everything done? Next turn.
+        TurnExecution();
     }
 
     public void HandleDefendRequest(MessageConnection messageConnection)
     {
-        var defendRequestMessage = (messageConnection.messageHeader as DefendRequestMessage);
+        currentActivePlayer.Heal(Random.Range(minHealAmt, maxHealAmt));
+        SendPlayerDefends();
+        TurnExecution();
     }
 
     public void HandleClaimTreasureRequest(MessageConnection messageConnection)
     {
-        var claimTreasureRequestMessage = (messageConnection.messageHeader as ClaimTreasureRequestMessage);
+        Node treasureNode = grid.GetSpecificNodeInstance(currentActivePlayer.CurrentNode);
+        currentActivePlayer.TreasureAmount += treasureNode.TreasureAmount;
+        SendObtainTreasure(treasureNode.TreasureAmount);
+        treasureNode.Treasure = false;
+        TurnExecution();
     }
 
     public void HandleLeaveDungeonRequest(MessageConnection messageConnection)

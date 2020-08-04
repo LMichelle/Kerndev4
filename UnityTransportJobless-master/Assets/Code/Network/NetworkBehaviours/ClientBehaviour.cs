@@ -127,16 +127,40 @@ namespace KernDev.NetworkBehaviour
                             messagesQueue.Enqueue(mcRoomInfo);
                             break;
                         case MessageHeader.MessageType.PlayerEnterRoom:
+                            var playerEnterRoomMessage = new PlayerEnterRoomMessage();
+                            playerEnterRoomMessage.DeserializeObject(ref reader);
+                            MessageConnection mcPlayerEnterRoom = new MessageConnection(connection, playerEnterRoomMessage);
+                            messagesQueue.Enqueue(mcPlayerEnterRoom);
                             break;
                         case MessageHeader.MessageType.PlayerLeaveRoom:
+                            var playerLeaveRoomMessage = new PlayerLeaveRoomMessage();
+                            playerLeaveRoomMessage.DeserializeObject(ref reader);
+                            MessageConnection mcPlayerLeaveRoom = new MessageConnection(connection, playerLeaveRoomMessage);
+                            messagesQueue.Enqueue(mcPlayerLeaveRoom);
                             break;
                         case MessageHeader.MessageType.ObtainTreasure:
+                            var obtainTreasureMessage = new ObtainTreasureMessage();
+                            obtainTreasureMessage.DeserializeObject(ref reader);
+                            MessageConnection mcObtainTreasure = new MessageConnection(connection, obtainTreasureMessage);
+                            messagesQueue.Enqueue(mcObtainTreasure);
                             break;
                         case MessageHeader.MessageType.HitMonster:
+                            var hitMonsterMessage = new HitMonsterMessage();
+                            hitMonsterMessage.DeserializeObject(ref reader);
+                            MessageConnection mcHitMonster = new MessageConnection(connection, hitMonsterMessage);
+                            messagesQueue.Enqueue(mcHitMonster);
                             break;
                         case MessageHeader.MessageType.HitByMonster:
+                            var hitByMonsterMessage = new HitByMonsterMessage();
+                            hitByMonsterMessage.DeserializeObject(ref reader);
+                            MessageConnection mcHitByMonster = new MessageConnection(connection, hitByMonsterMessage);
+                            messagesQueue.Enqueue(mcHitByMonster);
                             break;
                         case MessageHeader.MessageType.PlayerDefends:
+                            var playerDefendsMessage = new PlayerDefendsMessage();
+                            playerDefendsMessage.DeserializeObject(ref reader);
+                            MessageConnection mcPlayerDefends = new MessageConnection(connection, playerDefendsMessage);
+                            messagesQueue.Enqueue(mcPlayerDefends);
                             break;
                         case MessageHeader.MessageType.PlayerLeftDungeon:
                             break;
@@ -207,6 +231,12 @@ namespace KernDev.NetworkBehaviour
         {
             ClientCallbacks[(int)MessageHeader.MessageType.PlayerTurn].AddListener(ClientGameManager.ShowPlayerTurnMessage);
             ClientCallbacks[(int)MessageHeader.MessageType.RoomInfo].AddListener(ClientGameManager.ShowRoomInfoMessage);
+            ClientCallbacks[(int)MessageHeader.MessageType.HitMonster].AddListener(ClientGameManager.ShowHitMonsterMessage);
+            ClientCallbacks[(int)MessageHeader.MessageType.HitByMonster].AddListener(ClientGameManager.ShowHitByMonsterMessage);
+            ClientCallbacks[(int)MessageHeader.MessageType.PlayerDefends].AddListener(ClientGameManager.ShowPlayerDefendsMessage);
+            ClientCallbacks[(int)MessageHeader.MessageType.ObtainTreasure].AddListener(ClientGameManager.ShowObtainTreasureMessage);
+            ClientCallbacks[(int)MessageHeader.MessageType.PlayerEnterRoom].AddListener(ClientGameManager.ShowPlayerEnterRoomMessage);
+            ClientCallbacks[(int)MessageHeader.MessageType.PlayerLeaveRoom].AddListener(ClientGameManager.ShowPlayerLeaveRoomMessage);
         }
 
         public void Disconnect()

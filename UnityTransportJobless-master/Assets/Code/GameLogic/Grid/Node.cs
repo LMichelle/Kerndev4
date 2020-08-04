@@ -12,6 +12,8 @@ namespace KernDev.GameLogic
         public bool Monster { get; set; }
         public bool Treasure { get; set; }
 
+        public int TreasureAmount { get; set; }
+
         public Node(Vector3 pos, int gridX, int gridY)
         {
             this.gridX = gridX;

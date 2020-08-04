@@ -23,6 +23,7 @@ public class ClientGameManager : MonoBehaviour
     [HideInInspector]
     public Client ThisClient { get; set; }
     public Player ThisPlayer { get; set; }
+
     public List<Client> AllClientsList { get; set; }
 
     private ClientBehaviour clientBehaviour;
@@ -35,7 +36,7 @@ public class ClientGameManager : MonoBehaviour
         messagesText.text = "";
 
         ThisPlayer = new Player();
-        ThisPlayer.SetStartHP(ThisClient.StartHP);
+        ThisPlayer.SetStartValues(ThisClient.StartHP);
         ThisPlayer.TreasureAmount = 0;
         SetHPTreasureText();
 
@@ -45,7 +46,13 @@ public class ClientGameManager : MonoBehaviour
     public void ShowPlayerTurnMessage(MessageConnection messageConnection)
     {
         var message = (messageConnection.messageHeader as PlayerTurnMessage);
-        SetMessagesText($"It's Player {message.PlayerID}'s turn!");
+        Color color = Color.white;
+        foreach (Client c in AllClientsList)
+        {
+            if (c.PlayerID == message.PlayerID)
+                color = ColorExtensions.FromUInt(color, c.PlayerColour);
+        }
+        SetMessagesText(color, $"It's Player {message.PlayerID}'s turn!");
     }
 
     public void ShowRoomInfoMessage(MessageConnection messageConnection)
@@ -54,19 +61,107 @@ public class ClientGameManager : MonoBehaviour
         var message = (messageConnection.messageHeader as RoomInfoMessage);
         Wall openDirections = (Wall)message.MoveDirections;
         bool monster = System.Convert.ToBoolean(message.ContainsMonster);
+        int numberOfOtherPlayers = System.Convert.ToInt32(message.NumberOfOtherPlayers);
+        List<int> playerIDs = message.OtherPlayerIDs;
+
+        //for(int i=0; i <= numberOfOtherPlayers; i++)
+        //{
+        //    Color color = Color.white;
+        //    foreach (Client c in AllClientsList)
+        //    {
+        //        if (c.PlayerID == message.OtherPlayerIDs[i])
+        //            color = ColorExtensions.FromUInt(color, c.PlayerColour);
+        //    }
+        //    SetMessagesText(color, $"Player {message.OtherPlayerIDs[i]} is in this room.");
+        //}
+
         if (!monster)
         {
+            if (message.TreasureInRoom != 0)
+            {
+                claimTreasureButton.interactable = true;
+                SetMessagesText(Color.yellow, "There's treasure in this room!");
+            }
             SetActiveDirectionButtons(openDirections);
-            SetMessagesText($"You can go to the {openDirections}");
+            SetMessagesText(Color.white, $"You can go to the {openDirections}");
         }           
         else
         {
             SetAttackDefendButtons();
-            SetMessagesText("There's a monster in this room!");   
+            SetMessagesText(Color.red, "There's a monster in this room!");   // Is there a way to show clients if a monster died though?
         }
             
     }
 
+    public void ShowHitMonsterMessage(MessageConnection messageConnection)
+    {
+        var message = (messageConnection.messageHeader as HitMonsterMessage);
+        Color color = Color.white;
+        foreach (Client c in AllClientsList)
+        {
+            if (c.PlayerID == message.PlayerID)
+                color = ColorExtensions.FromUInt(color, c.PlayerColour);
+        }
+        SetMessagesText(color, $"Player {message.PlayerID} attacked the monster with {message.DamageDealt} hitpoints!");
+    }
+
+    public void ShowHitByMonsterMessage(MessageConnection messageConnection)
+    {
+        var message = (messageConnection.messageHeader as HitByMonsterMessage);
+        Color color = Color.white;
+        foreach (Client c in AllClientsList)
+        {
+            if (c.PlayerID == message.PlayerID)
+                color = ColorExtensions.FromUInt(color, c.PlayerColour);
+        }
+        SetMessagesText(color, $"Player {message.PlayerID} got attacked! His HP went down to {message.NewHP}!");
+        SetHPTreasureText();
+    }
+
+    public void ShowPlayerDefendsMessage(MessageConnection messageConnection)
+    {
+        var message = (messageConnection.messageHeader as PlayerDefendsMessage);
+        Color color = Color.white;
+        foreach (Client c in AllClientsList)
+        {
+            if (c.PlayerID == message.PlayerID)
+                color = ColorExtensions.FromUInt(color, c.PlayerColour);
+        }
+        SetMessagesText(color, $"Player {message.PlayerID} defended and healed! His HP went up to {message.NewHP}!");
+        SetHPTreasureText();
+    }
+
+    public void ShowObtainTreasureMessage(MessageConnection messageConnection)
+    {
+        var message = (messageConnection.messageHeader as ObtainTreasureMessage);
+        SetMessagesText(Color.yellow, $"You obtained {message.Amount} gold!");
+        ThisPlayer.TreasureAmount += message.Amount;
+        SetHPTreasureText();
+    }
+
+    public void ShowPlayerEnterRoomMessage(MessageConnection messageConnection)
+    {
+        var message = (messageConnection.messageHeader as PlayerEnterRoomMessage);
+        Color color = Color.white;
+        foreach (Client c in AllClientsList)
+        {
+            if (c.PlayerID == message.PlayerID)
+                color = ColorExtensions.FromUInt(color, c.PlayerColour);
+        }
+        SetMessagesText(color, $"Player {message.PlayerID} entered the room.");
+    }
+
+    public void ShowPlayerLeaveRoomMessage(MessageConnection messageConnection)
+    {
+        var message = (messageConnection.messageHeader as PlayerLeaveRoomMessage);
+        Color color = Color.white;
+        foreach (Client c in AllClientsList)
+        {
+            if (c.PlayerID == message.PlayerID)
+                color = ColorExtensions.FromUInt(color, c.PlayerColour);
+        }
+        SetMessagesText(color, $"Player {message.PlayerID} left the room.");
+    }
     #endregion
 
     #region SendRequests
@@ -170,12 +265,14 @@ public class ClientGameManager : MonoBehaviour
     private void SetHPTreasureText()
     {
         HPTreasureText.text = $"HP: {ThisPlayer.CurrentHP} \n" +
-            $"Treasure amount {ThisPlayer.TreasureAmount}";
+            $"Gold: {ThisPlayer.TreasureAmount}";
     }
 
-    private void SetMessagesText(string text)
+    private void SetMessagesText(Color32 color, string text)
     {
-        messagesText.text += text + "\n";
+        string hexColor = ColorExtensions.colorToHex(color);
+        messagesText.text += $"<color=#{hexColor}>" + text + "</color>\n";
         messagesText.rectTransform.sizeDelta = new Vector2(messagesText.rectTransform.sizeDelta.x, messagesText.rectTransform.sizeDelta.y + lineSpacing);
     }
+
 }

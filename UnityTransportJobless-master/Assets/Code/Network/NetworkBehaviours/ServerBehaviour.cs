@@ -362,6 +362,7 @@ namespace KernDev.NetworkBehaviour
             foreach (Client c in clientList)
             {
                 SendMessage(message.messageHeader, c.Connection);
+                c.StartHP = (message.messageHeader as StartGameMessage).StartHP;
             }
         }
 
