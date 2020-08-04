@@ -1,23 +1,23 @@
 ﻿using Unity.Networking.Transport;
 
-namespace Assets.Code
+namespace KernDev.NetworkBehaviour
 {
-    public class RequestDeniedMessage : MessageHeader
+    public class ObtainTreasureMessage : MessageHeader
     {
-        public override MessageType Type => MessageType.RequestDenied;
+        public override MessageType Type => MessageType.ObtainTreasure;
 
-        public uint DeniedMessageID { get; set; }
+        public ushort Amount { get; set; }
 
         public override void SerializeObject(ref DataStreamWriter writer)
         {
             base.SerializeObject(ref writer);
-            writer.WriteUInt(DeniedMessageID);
+            writer.WriteUShort(Amount);
         }
 
         public override void DeserializeObject(ref DataStreamReader reader)
         {
             base.DeserializeObject(ref reader);
-            DeniedMessageID = reader.ReadUInt();
+            Amount = reader.ReadUShort();
         }
     }
 }

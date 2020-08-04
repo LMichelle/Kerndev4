@@ -15,9 +15,22 @@ public class Client
     {
         PlayerID = playerID;
         PlayerName = playerName;
-        Color32 color = (Color32)Random.ColorHSV(0f, 1f, .7f, 1f, 0.7f, 1f, 1f, 1f);
-        PlayerColour = ColorExtensions.ToUInt(color);
         Connection = connection;
         Host = host;
+    }
+
+    public Client(int playerID, string playerName)
+    {
+        PlayerID = playerID;
+        PlayerName = playerName;
+    }
+
+    /// <summary>
+    /// Takes a random color and assigns it to the property PlayerColour.
+    /// </summary>
+    public void AssignRandomColor()
+    {
+        Color32 color = (Color32)Random.ColorHSV(0f, 1f, .7f, 1f, 0.7f, 1f, 1f, 1f);
+        PlayerColour = ColorExtensions.ToUInt(color);
     }
 }

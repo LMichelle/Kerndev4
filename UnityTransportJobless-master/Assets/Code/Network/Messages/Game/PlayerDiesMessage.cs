@@ -1,23 +1,23 @@
 ﻿using Unity.Networking.Transport;
 
-namespace Assets.Code
+namespace KernDev.NetworkBehaviour
 {
-    public class PlayerLeftMessage : MessageHeader
+    public class PlayerDiesMessage : MessageHeader
     {
-        public override MessageType Type => MessageType.PlayerLeft;
+        public override MessageType Type => MessageType.PlayerDies;
 
-        public int PlayerLeftID { get; set; }
+        public int PlayerID { get; set; }
 
         public override void SerializeObject(ref DataStreamWriter writer)
         {
             base.SerializeObject(ref writer);
-            writer.WriteInt(PlayerLeftID);
+            writer.WriteInt(PlayerID);
         }
 
         public override void DeserializeObject(ref DataStreamReader reader)
         {
             base.DeserializeObject(ref reader);
-            PlayerLeftID = reader.ReadInt();
+            PlayerID = reader.ReadInt();
         }
     }
 }

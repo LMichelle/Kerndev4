@@ -1,6 +1,6 @@
 ﻿using UnityEngine.Events;
 
-namespace Assets.Code
+namespace KernDev.NetworkBehaviour
 {
     public class MessageEvent : UnityEvent<MessageConnection>
     {

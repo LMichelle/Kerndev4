@@ -1,5 +1,5 @@
 ﻿using Unity.Networking.Transport;
-using Assets.Code;
+using KernDev.NetworkBehaviour;
 public class MessageConnection
 {
     public NetworkConnection connection;

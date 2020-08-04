@@ -20,6 +20,15 @@ namespace KernDev.NetworkBehaviour
         public List<Client> clientList = new List<Client>();
         public int deniedMessageID = 0;
 
+        private HostGameManager hostGameManager;
+        public HostGameManager HostGameManager { 
+            get { return hostGameManager; }
+            set { 
+                hostGameManager = value;
+                AddGameProtocolEventListeners();
+            } 
+        }
+
         public MessageEvent[] ServerCallbacks = new MessageEvent[(int)MessageHeader.MessageType.Count];
         // these are all 7 message type events. Every Message Type has its own event that it listens to. 
         // e.g. the setname message type is ServerCallbacks[(int)MessageHeader.MessageType.SetName)]. I can add functions to this event that need to be
@@ -58,9 +67,7 @@ namespace KernDev.NetworkBehaviour
             ServerCallbacks[(int)MessageHeader.MessageType.StartGame].AddListener(HandleStartGame);
             ServerCallbacks[(int)MessageHeader.MessageType.None].AddListener(HandleNone); // the optional one to keep the connection going in inactivity
             #endregion
-            #region Game Event Listeners
 
-            #endregion
         }
 
         void Update()
@@ -86,6 +93,7 @@ namespace KernDev.NetworkBehaviour
                 {
                     // Send Request Denied Message
                     SendRequestDeniedMessage(connection);
+                    //networkDriver.Disconnect(connection);
                 }
                 else
                 {
@@ -97,6 +105,7 @@ namespace KernDev.NetworkBehaviour
                     if (connection.InternalId == 0)
                         host = true;
                     Client newClient = new Client(connection.InternalId, "", connection, host);
+                    newClient.AssignRandomColor();
                     clientList.Add(newClient);
                     SendWelcomeMessage(newClient);
                 }
@@ -117,6 +126,7 @@ namespace KernDev.NetworkBehaviour
                         var messageType = (MessageHeader.MessageType)reader.ReadUShort();
                         switch (messageType)
                         {
+                            #region Lobby Protocol
                             case MessageHeader.MessageType.None:
                                 var noneMessage = new NoneMessage();
                                 noneMessage.DeserializeObject(ref reader);
@@ -147,6 +157,61 @@ namespace KernDev.NetworkBehaviour
                                 MessageConnection mcStartGame = new MessageConnection(connections[i], startGameMessage);
                                 messagesQueue.Enqueue(mcStartGame);
                                 break;
+                            #endregion
+                            #region Game Protocol
+                            case MessageHeader.MessageType.PlayerTurn:
+                                break;
+                            case MessageHeader.MessageType.RoomInfo:
+                                break;
+                            case MessageHeader.MessageType.PlayerEnterRoom:
+                                break;
+                            case MessageHeader.MessageType.PlayerLeaveRoom:
+                                break;
+                            case MessageHeader.MessageType.ObtainTreasure:
+                                break;
+                            case MessageHeader.MessageType.HitMonster:
+                                break;
+                            case MessageHeader.MessageType.HitByMonster:
+                                break;
+                            case MessageHeader.MessageType.PlayerDefends:
+                                break;
+                            case MessageHeader.MessageType.PlayerLeftDungeon:
+                                break;
+                            case MessageHeader.MessageType.PlayerDies:
+                                break;
+                            case MessageHeader.MessageType.EndGame:
+                                break;
+                            case MessageHeader.MessageType.MoveRequest:
+                                var moveRequestMessage = new MoveRequestMessage();
+                                moveRequestMessage.DeserializeObject(ref reader);
+                                var mcMoveRequest = new MessageConnection(connections[i], moveRequestMessage);
+                                messagesQueue.Enqueue(mcMoveRequest);
+                                break;
+                            case MessageHeader.MessageType.AttackRequest:
+                                var attackRequestMessage = new AttackRequestMessage();
+                                attackRequestMessage.DeserializeObject(ref reader);
+                                var mcAttackRequest = new MessageConnection(connections[i], attackRequestMessage);
+                                messagesQueue.Enqueue(mcAttackRequest);
+                                break;
+                            case MessageHeader.MessageType.DefendRequest:
+                                var defendRequestMessage = new DefendRequestMessage();
+                                defendRequestMessage.DeserializeObject(ref reader);
+                                var mcDefendRequest = new MessageConnection(connections[i], defendRequestMessage);
+                                messagesQueue.Enqueue(mcDefendRequest);
+                                break;
+                            case MessageHeader.MessageType.ClaimTreasureRequest:
+                                var claimTreasureRequestMessage = new ClaimTreasureRequestMessage();
+                                claimTreasureRequestMessage.DeserializeObject(ref reader);
+                                var mcClaimTreasureRequest = new MessageConnection(connections[i], claimTreasureRequestMessage);
+                                messagesQueue.Enqueue(mcClaimTreasureRequest);
+                                break;
+                            case MessageHeader.MessageType.LeaveDungeonRequest:
+                                var leaveDungeonRequestMessage = new LeaveDungeonRequestMessage();
+                                leaveDungeonRequestMessage.DeserializeObject(ref reader);
+                                var mcLeaveDungeonRequest = new MessageConnection(connections[i], leaveDungeonRequestMessage);
+                                messagesQueue.Enqueue(mcLeaveDungeonRequest);
+                                break;
+                            #endregion
                             case MessageHeader.MessageType.Count:
                                 break;
                             default:
@@ -300,7 +365,16 @@ namespace KernDev.NetworkBehaviour
             }
         }
 
-        private void SendMessage(MessageHeader message, NetworkConnection connection)
+        private void AddGameProtocolEventListeners()
+        {
+            ServerCallbacks[(int)MessageHeader.MessageType.MoveRequest].AddListener(HostGameManager.HandleMoveRequest);
+            ServerCallbacks[(int)MessageHeader.MessageType.AttackRequest].AddListener(HostGameManager.HandleAttackRequest);
+            ServerCallbacks[(int)MessageHeader.MessageType.DefendRequest].AddListener(HostGameManager.HandleDefendRequest);
+            ServerCallbacks[(int)MessageHeader.MessageType.ClaimTreasureRequest].AddListener(HostGameManager.HandleClaimTreasureRequest);
+            ServerCallbacks[(int)MessageHeader.MessageType.LeaveDungeonRequest].AddListener(HostGameManager.HandleLeaveDungeonRequest);
+        }
+
+        public void SendMessage(MessageHeader message, NetworkConnection connection)
         {
             if (connection != default)
             {

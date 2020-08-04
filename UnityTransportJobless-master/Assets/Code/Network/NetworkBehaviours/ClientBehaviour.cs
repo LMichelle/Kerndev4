@@ -17,6 +17,21 @@ namespace KernDev.NetworkBehaviour
         public MessageEvent[] ClientCallbacks = new MessageEvent[(int)MessageHeader.MessageType.Count];
 
         private LobbyManager lobbyManager;
+        public LobbyManager LobbyManager {
+            get { return lobbyManager; }
+            set {
+                lobbyManager = value;
+                AddLobbyEventListeners(); }
+        }
+
+        private ClientGameManager clientGameManager;
+        public ClientGameManager ClientGameManager {
+            get { return clientGameManager; }
+            set {
+                clientGameManager = value;
+                AddGameEventListeners();
+            }
+        }
 
         void Start()
         {
@@ -29,21 +44,13 @@ namespace KernDev.NetworkBehaviour
             connection = networkDriver.Connect(endpoint);
 
             // Instatiate & Finds
-            lobbyManager = GameObject.FindGameObjectWithTag("GameController").GetComponent<LobbyManager>();
-
             messagesQueue = new Queue<MessageConnection>();
             for (int i = 0; i < ClientCallbacks.Length; i++)
             {
                 ClientCallbacks[i] = new MessageEvent(); // Instantiate all Message Type events.
             }
 
-            // Add event listeners
-            ClientCallbacks[(int)MessageHeader.MessageType.NewPlayer].AddListener(lobbyManager.ShowNewPlayerMessage);
-            ClientCallbacks[(int)MessageHeader.MessageType.Welcome].AddListener(lobbyManager.ShowWelcomeMessage);
-            ClientCallbacks[(int)MessageHeader.MessageType.PlayerLeft].AddListener(lobbyManager.ShowPlayerLeftMessage);
-            ClientCallbacks[(int)MessageHeader.MessageType.RequestDenied].AddListener(lobbyManager.ShowRequestDeniedMessage);
-            ClientCallbacks[(int)MessageHeader.MessageType.StartGame].AddListener(lobbyManager.ShowStartGame);
-
+            LobbyManager = GameObject.FindGameObjectWithTag("GameController").GetComponent<LobbyManager>();
         }
 
         void Update()
@@ -69,7 +76,7 @@ namespace KernDev.NetworkBehaviour
                     var messageType = (MessageHeader.MessageType)reader.ReadUShort();
                     switch (messageType) // client reads all except setname. 
                     {
-                        #region lobby
+                        #region Lobby Protocol
                         case MessageHeader.MessageType.None:
                             break;
                         case MessageHeader.MessageType.NewPlayer:
@@ -106,6 +113,48 @@ namespace KernDev.NetworkBehaviour
                             messagesQueue.Enqueue(mcStartGame);
                             break;
                         #endregion
+                        #region Game Protocol
+                        case MessageHeader.MessageType.PlayerTurn:
+                            var playerTurnMessage = new PlayerTurnMessage();
+                            playerTurnMessage.DeserializeObject(ref reader);
+                            MessageConnection mcPlayerTurn = new MessageConnection(connection, playerTurnMessage);
+                            messagesQueue.Enqueue(mcPlayerTurn);
+                            break;
+                        case MessageHeader.MessageType.RoomInfo:
+                            var roomInfoMessage = new RoomInfoMessage();
+                            roomInfoMessage.DeserializeObject(ref reader);
+                            MessageConnection mcRoomInfo = new MessageConnection(connection, roomInfoMessage);
+                            messagesQueue.Enqueue(mcRoomInfo);
+                            break;
+                        case MessageHeader.MessageType.PlayerEnterRoom:
+                            break;
+                        case MessageHeader.MessageType.PlayerLeaveRoom:
+                            break;
+                        case MessageHeader.MessageType.ObtainTreasure:
+                            break;
+                        case MessageHeader.MessageType.HitMonster:
+                            break;
+                        case MessageHeader.MessageType.HitByMonster:
+                            break;
+                        case MessageHeader.MessageType.PlayerDefends:
+                            break;
+                        case MessageHeader.MessageType.PlayerLeftDungeon:
+                            break;
+                        case MessageHeader.MessageType.PlayerDies:
+                            break;
+                        case MessageHeader.MessageType.EndGame:
+                            break;
+                        case MessageHeader.MessageType.MoveRequest:
+                            break;
+                        case MessageHeader.MessageType.AttackRequest:
+                            break;
+                        case MessageHeader.MessageType.DefendRequest:
+                            break;
+                        case MessageHeader.MessageType.ClaimTreasureRequest:
+                            break;
+                        case MessageHeader.MessageType.LeaveDungeonRequest:
+                            break;
+                        #endregion
                         case MessageHeader.MessageType.Count:
                             break;
                         default:
@@ -116,7 +165,7 @@ namespace KernDev.NetworkBehaviour
                 {
                     Debug.Log("Disconnected from server");
                     connection = default;
-                    lobbyManager.ShowHostTerminatedRoom();
+                    LobbyManager.ShowHostTerminatedRoom();
                 }
             }
 
@@ -143,6 +192,21 @@ namespace KernDev.NetworkBehaviour
                 networkDriver.EndSend(writer);
             }
 
+        }
+
+        private void AddLobbyEventListeners()
+        {
+            ClientCallbacks[(int)MessageHeader.MessageType.NewPlayer].AddListener(LobbyManager.ShowNewPlayerMessage);
+            ClientCallbacks[(int)MessageHeader.MessageType.Welcome].AddListener(LobbyManager.ShowWelcomeMessage);
+            ClientCallbacks[(int)MessageHeader.MessageType.PlayerLeft].AddListener(LobbyManager.ShowPlayerLeftMessage);
+            ClientCallbacks[(int)MessageHeader.MessageType.RequestDenied].AddListener(LobbyManager.ShowRequestDeniedMessage);
+            ClientCallbacks[(int)MessageHeader.MessageType.StartGame].AddListener(LobbyManager.ShowStartGame);
+        }
+
+        public void AddGameEventListeners()
+        {
+            ClientCallbacks[(int)MessageHeader.MessageType.PlayerTurn].AddListener(ClientGameManager.ShowPlayerTurnMessage);
+            ClientCallbacks[(int)MessageHeader.MessageType.RoomInfo].AddListener(ClientGameManager.ShowRoomInfoMessage);
         }
 
         public void Disconnect()

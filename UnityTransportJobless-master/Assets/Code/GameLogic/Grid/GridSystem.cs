@@ -12,7 +12,7 @@ namespace KernDev.GameLogic
         public float nodeRadius;
         public float distanceBetweenNodes;
 
-        private Node[,] NodeArray;
+        public Node[,] NodeArray { get; private set; }
         private float nodeDiameter;
         private int gridSizeX, gridSizeY;
         //[SerializeField]
@@ -66,7 +66,6 @@ namespace KernDev.GameLogic
 
             SpawnMazeObjects();
             finishedGenerating = true;
-            Debug.Log(finishedGenerating);
         }
 
         private List<Node> GetUnvisitedNeighbourNodes(List<Node> neighbouringNodesList, List<Node> checkedNodes, Stack<Node> nodeStack)
@@ -162,10 +161,35 @@ namespace KernDev.GameLogic
             }
         }
 
-        public Node GetRandomNode()
+        public ref Node GetRandomNode()
         {
-            Node randomNode = NodeArray[Random.Range(0, NodeArray.GetLength(0)), Random.Range(0, NodeArray.GetLength(1))];
-            return randomNode;
+            return ref NodeArray[Random.Range(0, NodeArray.GetLength(0)), Random.Range(0, NodeArray.GetLength(1))];
+        }
+
+        public ref Node GetSpecificNodeInstance(Node node)
+        {
+            return ref NodeArray[node.gridX, node.gridY];
+        }
+
+        public ref Node GetSpecificNeighbourNode(Node currentNode, Wall movedDirection)
+        {
+            int checkX = 0, checkY = 0;
+            if ((movedDirection & Wall.NORTH) != 0) // if movedDirection == Wall.north bitwise stuff
+                checkY += 1;
+            if ((movedDirection & Wall.EAST) != 0)
+                checkX += 1;
+            if ((movedDirection & Wall.SOUTH) != 0)
+                checkY -= 1;
+            if ((movedDirection & Wall.WEST) != 0)
+                checkX -= 1;
+
+            checkX = currentNode.gridX + checkX;
+            checkY = currentNode.gridY + checkY;
+            if (checkX < 0 || checkX >= gridSizeX || checkY < 0 || checkY >= gridSizeY) // I don't really know how to deny this, so let's just keep the node the same
+                return ref NodeArray[currentNode.gridX, currentNode.gridY];
+
+
+            return ref NodeArray[checkX, checkY];
         }
 
         private void OnDrawGizmos()

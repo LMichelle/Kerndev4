@@ -2,9 +2,9 @@
 
 namespace KernDev.NetworkBehaviour
 {
-    public class NoneMessage : MessageHeader
+    public class  ClaimTreasureRequestMessage : MessageHeader
     {
-        public override MessageType Type => MessageType.None;
+        public override MessageType Type => MessageType.ClaimTreasureRequest;
 
 
         public override void SerializeObject(ref DataStreamWriter writer)

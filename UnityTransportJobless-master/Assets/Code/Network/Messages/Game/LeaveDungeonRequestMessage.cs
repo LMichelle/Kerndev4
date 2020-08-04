@@ -2,9 +2,9 @@
 
 namespace KernDev.NetworkBehaviour
 {
-    public class NoneMessage : MessageHeader
+    public class LeaveDungeonRequestMessage : MessageHeader
     {
-        public override MessageType Type => MessageType.None;
+        public override MessageType Type => MessageType.LeaveDungeonRequest;
 
 
         public override void SerializeObject(ref DataStreamWriter writer)

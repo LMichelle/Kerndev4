@@ -1,4 +1,5 @@
 ﻿using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 using KernDev.NetworkBehaviour;
@@ -10,6 +11,8 @@ namespace Assets.Code
         private Text outputMessagesText;
         public InputField inputField;
         private ClientBehaviour clientBehaviour;
+        [SerializeField]
+        private int lineSpacing = 35;
 
         [SerializeField]
         private Text outputLogsText;
@@ -18,6 +21,11 @@ namespace Assets.Code
         private Button hostGameButton, joinGameButton;
 
         private Client thisClient;
+        private List<Client> allClientsList = new List<Client>();
+        public List<Client> AllClientsList { 
+            get { return allClientsList; } 
+            private set { allClientsList = value; } 
+        }
 
         private void Start()
         {
@@ -51,6 +59,7 @@ namespace Assets.Code
             GameObject client = new GameObject();
             clientBehaviour = client.AddComponent<ClientBehaviour>();
             client.name = "Client";
+            client.tag = "Client";
         }
 
         public void JoinGame()
@@ -58,6 +67,7 @@ namespace Assets.Code
             GameObject client = new GameObject();
             clientBehaviour = client.AddComponent<ClientBehaviour>();
             client.name = "Client";
+            client.tag = "Client";
             outputLogsText.text += "Joined the game.";
         }
 
@@ -65,11 +75,20 @@ namespace Assets.Code
         public void ShowNewPlayerMessage(MessageConnection messageConnection)
         {
             var message = (messageConnection.messageHeader as NewPlayerMessage);
+            
+            // Get colour and convert
             uint playerColour = message.PlayerColour;
             Color32 color32 = new Color32();
             color32 = ColorExtensions.FromUInt(color32, playerColour);
             string hexColor = ColorExtensions.colorToHex(color32);
-            outputMessagesText.text += $"<color=#{hexColor}>Player {message.PlayerID}, {message.PlayerName} has joined the game!</color>\n";
+
+            // Display the message
+            SetMessagesText($"<color=#{hexColor}>Player {message.PlayerID}, {message.PlayerName} has joined the game!</color>");
+            
+            // Add to the clientList
+            Client otherClient = new Client(message.PlayerID, message.PlayerName, default, false);
+            otherClient.PlayerColour = message.PlayerColour;
+            AllClientsList.Add(otherClient);
         }
 
         /// <summary>
@@ -83,7 +102,7 @@ namespace Assets.Code
             Color32 color32 = new Color32();
             color32 = ColorExtensions.FromUInt(color32, playerColour);
             string hexColor = ColorExtensions.colorToHex(color32);
-            outputMessagesText.text += $"<color=#{hexColor}> Welcome! Your player ID is {message.PlayerID}.</color>\n";
+            SetMessagesText($"<color=#{hexColor}> Welcome! Your player ID is {message.PlayerID}.</color>");
             bool host = false;
             if (message.PlayerID == 0)
                 host = true;
@@ -91,6 +110,7 @@ namespace Assets.Code
             // Have this clients info ready for the gamemanager.
             thisClient = new Client(message.PlayerID, "", messageConnection.connection, host);
             thisClient.PlayerColour = message.PlayerColour;
+            AllClientsList.Add(thisClient);
 
             SendSetNameMessage();
         }
@@ -98,23 +118,30 @@ namespace Assets.Code
         public void ShowRequestDeniedMessage(MessageConnection messageConnection)
         {
             var message = (messageConnection.messageHeader as RequestDeniedMessage);
-            uint deniedID = message.DeniedMessageID;  
-            outputMessagesText.text += $"<color=#E7D0D7>Your request has been denied. Denied Message ID: {deniedID}</color>\n";
+            uint deniedID = message.DeniedMessageID;
+            SetMessagesText($"<color=#E7D0D7>Your request has been denied. Denied Message ID: {deniedID}</color>");
         } 
 
         public void ShowPlayerLeftMessage(MessageConnection messageConnection)
         {
-            Debug.Log("Showing Player Left Message");
             var message = (messageConnection.messageHeader as PlayerLeftMessage);
-            int playerID = message.PlayerLeftID;
-            outputMessagesText.text += $"Player {playerID} has left the room.\n";
+            SetMessagesText($"Player {message.PlayerLeftID} has left the room.");
+            
+            // Remove the client that left from the All Clients List
+            foreach (Client c in AllClientsList)
+            {
+                if (c.PlayerID == message.PlayerLeftID)
+                {
+                    AllClientsList.Remove(c);
+                }
+            }
         }
 
         public void ShowStartGame(MessageConnection messageConnection)
         {
             var message = (messageConnection.messageHeader as StartGameMessage);
             thisClient.StartHP = message.StartHP;
-            outputMessagesText.text += $"The Game is starting in \n";
+            SetMessagesText($"The Game is starting in");
             StartCoroutine(StartGameCountDown());
         }
 
@@ -189,26 +216,19 @@ namespace Assets.Code
             bool countdown = true;
             while (countdown)
             {
-                //Debug.Log("Countdown");
                 for (int i = 3; i > 0; i--)
                 {
-                    Debug.Log("counting down");
-                    outputMessagesText.text += $"{i}\n";
+                    SetMessagesText($"{i}");
                     yield return new WaitForSeconds(1f);
                 }
                 countdown = false;
                 StartGame();
             }
         }
-        
-        public void SetOutputText(Text text)
-        {
-            outputMessagesText = text;
-        }
 
         public void ShowHostTerminatedRoom()
         {
-            outputMessagesText.text = "The host terminated the room.";
+            SetMessagesText("The host terminated the room.");
         }
 
         private void StartGame()
@@ -219,6 +239,22 @@ namespace Assets.Code
             }
             gameObject.GetComponent<ClientGameManager>().enabled = true;
             gameObject.GetComponent<ClientGameManager>().ThisClient = thisClient;
+            gameObject.GetComponent<ClientGameManager>().AllClientsList = AllClientsList;
+        }
+
+        /// <summary>
+        /// Used on the buttons to get the client's messages text GO or the host's.
+        /// </summary>
+        /// <param name="text"></param>
+        public void SetOutputText(Text text)
+        {
+            outputMessagesText = text;
+        }
+
+        private void SetMessagesText(string text)
+        {
+            outputMessagesText.text += text + "\n";
+            outputMessagesText.rectTransform.sizeDelta = new Vector2(outputMessagesText.rectTransform.sizeDelta.x, outputMessagesText.rectTransform.sizeDelta.y + lineSpacing);
         }
     }
 }

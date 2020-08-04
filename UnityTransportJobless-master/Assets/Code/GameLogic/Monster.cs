@@ -3,21 +3,19 @@ using System.Collections.Generic;
 using UnityEngine;
 
 namespace KernDev.GameLogic
-{    
-    public class Player
+{
+    public class Monster
     {
         public int CurrentHP { get; private set; }
         public Node CurrentNode { get; set; }
-        public int TreasureAmount { get; set; }
+
+        public int DamageAmount { get; set; }
 
         public bool Dead { get; private set; }
 
-        private int startHP;
-
         public void SetStartHP(int amount)
         {
-            startHP = amount;
-            CurrentHP = startHP;
+            CurrentHP = amount;
         }
 
         public void TakeDamage(int amount)
@@ -29,13 +27,5 @@ namespace KernDev.GameLogic
                 Dead = true;
             }
         }
-
-        public void Heal(int amount)
-        {
-            CurrentHP += amount;
-            if (CurrentHP > startHP)
-                CurrentHP = startHP;
-        }
-
     }
 }

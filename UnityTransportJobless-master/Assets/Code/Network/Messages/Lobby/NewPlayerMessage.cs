@@ -1,13 +1,14 @@
 ﻿using Unity.Networking.Transport;
 
-namespace Assets.Code
+namespace KernDev.NetworkBehaviour
 {
-    public class WelcomeMessage : MessageHeader
+    public class NewPlayerMessage : MessageHeader
     {
-        public override MessageType Type => MessageType.Welcome;
+        public override MessageType Type => MessageType.NewPlayer;
 
         public int PlayerID { get; set; }
         public uint PlayerColour { get; set; }
+        public string PlayerName { get; set; }
 
         public override void SerializeObject(ref DataStreamWriter writer)
         {
@@ -15,6 +16,7 @@ namespace Assets.Code
 
             writer.WriteInt(PlayerID);
             writer.WriteUInt(PlayerColour);
+            writer.WriteString(PlayerName);
         }
 
         public override void DeserializeObject(ref DataStreamReader reader)
@@ -23,6 +25,7 @@ namespace Assets.Code
 
             PlayerID = reader.ReadInt();
             PlayerColour = reader.ReadUInt();
+            PlayerName = reader.ReadString().ToString();
         }
     }
 }

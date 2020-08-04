@@ -1,6 +1,6 @@
 ﻿using Unity.Networking.Transport;
 
-namespace Assets.Code
+namespace KernDev.NetworkBehaviour
 {
     public abstract class MessageHeader
     {
@@ -10,12 +10,28 @@ namespace Assets.Code
         public enum MessageType
         {
             None = 0,
-            NewPlayer,
+            NewPlayer, // Lobby begin
             Welcome,
             SetName,
             RequestDenied,
             PlayerLeft,
-            StartGame,
+            StartGame, // Lobby end
+            PlayerTurn, // Game Protocol
+            RoomInfo,
+            PlayerEnterRoom,
+            PlayerLeaveRoom,
+            ObtainTreasure,
+            HitMonster,
+            HitByMonster,
+            PlayerDefends,
+            PlayerLeftDungeon,
+            PlayerDies,
+            EndGame,
+            MoveRequest,
+            AttackRequest,
+            DefendRequest,
+            ClaimTreasureRequest,
+            LeaveDungeonRequest, // Game End
             Count
         }
 

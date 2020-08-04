@@ -1,4 +1,5 @@
 ﻿using UnityEngine;
+using System;
 
 namespace KernDev.GameLogic
 {
@@ -8,6 +9,8 @@ namespace KernDev.GameLogic
         public Vector3 pos;
         public Wall walls;
         public bool DungeonExit { get; set; }
+        public bool Monster { get; set; }
+        public bool Treasure { get; set; }
 
         public Node(Vector3 pos, int gridX, int gridY)
         {
@@ -25,6 +28,18 @@ namespace KernDev.GameLogic
             if ((walls & Wall.SOUTH) != 0) { amountOfWalls++; }
             if ((walls & Wall.WEST) != 0) { amountOfWalls++; }
             return amountOfWalls;
+        }
+
+        public Wall GetOpenDirection()
+        {
+            // Thank you Google
+            Wall open = walls;
+            Wall allValues = (Wall)0;
+            foreach (var v in Enum.GetValues(typeof(Wall)))
+                allValues |= (Wall)v;
+            var compliment = allValues & ~(open);
+
+            return compliment;
         }
 
         public void RemoveWall(Wall wall)

@@ -1,25 +1,23 @@
 ﻿using Unity.Networking.Transport;
 
-namespace Assets.Code
+namespace KernDev.NetworkBehaviour
 {
-    public class SetNameMessage : MessageHeader
+    public class PlayerLeftDungeonMessage : MessageHeader
     {
-        public override MessageType Type => MessageType.SetName;
+        public override MessageType Type => MessageType.PlayerLeftDungeon;
 
-        public string Name { get; set; }
+        public int PlayerID { get; set; }
 
         public override void SerializeObject(ref DataStreamWriter writer)
         {
             base.SerializeObject(ref writer);
-
-            writer.WriteString(Name);
+            writer.WriteInt(PlayerID);
         }
 
         public override void DeserializeObject(ref DataStreamReader reader)
         {
             base.DeserializeObject(ref reader);
-
-            Name = reader.ReadString().ToString();
+            PlayerID = reader.ReadInt();
         }
     }
 }

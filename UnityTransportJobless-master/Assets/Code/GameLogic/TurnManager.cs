@@ -2,9 +2,9 @@
 
 namespace KernDev.GameLogic
 {
-    public class TurnManager : MonoBehaviour
+    public class TurnManager
     {
-        private int Turn { get; set; } // Start at player amount, next turn will do modulo and turn will be zero the first time.
+        public int Turn { get; set; } // Start at player amount, next turn will do modulo and turn will be zero the first time.
 
         public int NextTurn(int amountOfPlayers)
         {
