@@ -253,14 +253,13 @@ public class HostGameManager : MonoBehaviour
     /// <summary>
     /// Send to the client how much treasure he obtained.
     /// </summary>
-    private void SendObtainTreasure(int amt)
+    private void SendObtainTreasure(int amt, List<Client> receivingClients)
     {
-        Client activeClient;
-        inverseActiveDictionary.TryGetValue(currentActivePlayer, out activeClient);
         var message = new ObtainTreasureMessage {
             Amount = (ushort)amt
         };
-        server.SendMessage(message, activeClient.Connection);
+        foreach(Client c in receivingClients)
+            server.SendMessage(message, c.Connection);
     }
 
     /// <summary>
@@ -507,8 +506,31 @@ public class HostGameManager : MonoBehaviour
     public void HandleClaimTreasureRequest(MessageConnection messageConnection)
     {
         Node treasureNode = grid.GetSpecificNodeInstance(currentActivePlayer.CurrentNode);
-        currentActivePlayer.TreasureAmount += treasureNode.TreasureAmount;
-        SendObtainTreasure(treasureNode.TreasureAmount);
+        List<Client> receiveTreasureClients = new List<Client>();
+        // Get all clients on this node
+        foreach(KeyValuePair<Client, Player> clientPlayerPair in ActiveClientPlayerDictionary)
+        {
+            if (clientPlayerPair.Value.CurrentNode == treasureNode)
+                receiveTreasureClients.Add(clientPlayerPair.Key);
+        }
+        // divide the treasure amount over the players
+        int treasureAmountPerPlayer = Mathf.RoundToInt(treasureNode.TreasureAmount / receiveTreasureClients.Count);
+
+        // Send the obtain treasure to all those clients
+        foreach(Client c in receiveTreasureClients)
+        {
+            foreach (KeyValuePair<Client, Player> clientPlayerPair in ActiveClientPlayerDictionary)
+            {
+                if (clientPlayerPair.Key == c)
+                {
+                    clientPlayerPair.Value.TreasureAmount += treasureAmountPerPlayer;
+                }
+        }
+        }
+
+        //currentActivePlayer.TreasureAmount += treasureNode.TreasureAmount;
+        //SendObtainTreasure(treasureNode.TreasureAmount);
+        SendObtainTreasure(treasureAmountPerPlayer, receiveTreasureClients);
         treasureNode.Treasure = false;
         TurnExecution();
     }
