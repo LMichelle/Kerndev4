@@ -3815,6 +3815,8 @@ MonoBehaviour:
   outputLogsText: {fileID: 1669416706}
   hostGameButton: {fileID: 699653709}
   joinGameButton: {fileID: 701888861}
+  minPlayerHP: 30
+  maxPlayerHP: 50
 --- !u!114 &713337505
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3857,16 +3859,25 @@ MonoBehaviour:
     type: 3}
   treasureGO: {fileID: 7710596114589387125, guid: 4f46bf8797e51b747a69f56275fccc44,
     type: 3}
+  ExitGO: {fileID: 7098223705211656261, guid: f57265cc9ff7fbf4384b69d599da8746, type: 3}
   gridGO: {fileID: 5574241064367834872, guid: 19bda411bc742e84192906889c95d1f6, type: 3}
   testSpawnPlayersGO: {fileID: 7031989043103648479, guid: 6f2798b448b602c45b4fad84a15572df,
     type: 3}
+  minMonsterSpawnAmt: 5
+  maxMonsterSpawnAmt: 10
   minMonsterHP: 10
   maxMonsterHP: 15
-  minMonsterDmg: 1
-  maxMonsterDmg: 5
+  minMonsterDmg: 15
+  maxMonsterDmg: 20
+  minPlayerDmg: 3
+  maxPlayerDmg: 7
   variance: 2
   minHealAmt: 2
   maxHealAmt: 7
+  minTreasureContainingAmt: 200
+  maxTreasureContainingAmt: 300
+  minTreasureSpawnAmt: 2
+  maxTreasureSpawnAmt: 3
 --- !u!114 &713337508
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -7558,7 +7569,7 @@ MonoBehaviour:
     m_PersistentCalls:
       m_Calls:
       - m_Target: {fileID: 713337508}
-        m_MethodName: SendExitDungeonRequest
+        m_MethodName: SendLeaveDungeonRequest
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}

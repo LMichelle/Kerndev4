@@ -20,6 +20,9 @@ namespace Assets.Code
         [SerializeField]
         private Button hostGameButton, joinGameButton;
 
+        [SerializeField]
+        private int minPlayerHP = 30, maxPlayerHP = 50;
+
         private Client thisClient;
         private List<Client> allClientsList = new List<Client>();
         public List<Client> AllClientsList { 
@@ -186,7 +189,9 @@ namespace Assets.Code
         /// </summary>
         public void SendStartGame()
         {
-            var startGameMessage = new StartGameMessage { StartHP = 300 };
+            var startGameMessage = new StartGameMessage { 
+                StartHP = (ushort)Random.Range(minPlayerHP, maxPlayerHP) 
+            };
             clientBehaviour.SendMessage(startGameMessage);
         }
 

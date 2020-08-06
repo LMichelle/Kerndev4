@@ -11,17 +11,25 @@ public class HostGameManager : MonoBehaviour
 {
     public GameObject fakeMonster;
     public GameObject treasureGO;
+    public GameObject ExitGO;
     public GameObject gridGO;
     public GameObject testSpawnPlayersGO;
 
     [SerializeField]
+    private int minMonsterSpawnAmt = 1, maxMonsterSpawnAmt = 5;
+    [SerializeField]
     private int minMonsterHP = 10, maxMonsterHP = 15, minMonsterDmg = 1, maxMonsterDmg = 5;
+    [SerializeField]
     private int minPlayerDmg = 3, maxPlayerDmg = 7;
     [SerializeField]
     private int variance = 2;
     [SerializeField]
     private int minHealAmt = 2, maxHealAmt = 7;
-    private int minTreasureAmt = 200, maxTreasureAmt = 300;
+    [SerializeField]
+    private int minTreasureContainingAmt = 200, maxTreasureContainingAmt = 300;
+    [SerializeField]
+    private int minTreasureSpawnAmt = 10, maxTreasureSpawnAmt = 30;
+    
     
     private GridSystem grid;
     private ServerBehaviour server;
@@ -29,8 +37,8 @@ public class HostGameManager : MonoBehaviour
 
     private List<Client> clientList; // List of all clients
     private Dictionary<Client, Player> AllClientPlayerDictionary = new Dictionary<Client, Player>(); // All clients and their player info
-    private Dictionary<Client, Player> ActiveClientPlayerDictionary = new Dictionary<Client, Player>(); // all clients + players still in the turns
-    private Dictionary<Player, Client> ActivePlayerClientDictionary = new Dictionary<Player, Client>(); // inverse dictionary
+    private Dictionary<Client, Player> ActiveClientPlayerDictionary = new Dictionary<Client, Player>(); // all clients/players still in the turns
+    private Dictionary<Player, Client> inverseActiveDictionary = new Dictionary<Player, Client>(); // inverse dictionary
     private List<Player> playerTurnList = new List<Player>(); // The list order is the turn order
     private Player currentActivePlayer;
     private List<Monster> monsterList = new List<Monster>();
@@ -53,11 +61,12 @@ public class HostGameManager : MonoBehaviour
             Player player = new Player();
             AllClientPlayerDictionary.Add(c, player); 
             ActiveClientPlayerDictionary.Add(c, player);
-            ActivePlayerClientDictionary.Add(player, c);
             playerTurnList.Add(player);
             player.SetStartValues(c.StartHP);
             player.DamageAmount = Random.Range(minPlayerDmg, maxPlayerDmg);
         }
+        UpdateInverseDictionary();
+
 
         // spawn players, monsters and treasures.
         StartCoroutine(SpawnPlayers());
@@ -67,9 +76,11 @@ public class HostGameManager : MonoBehaviour
 
         // send the turn
         turnManager.Turn = ActiveClientPlayerDictionary.Count - 1;
+        turnManager.FormerAmountOfPlayers = ActiveClientPlayerDictionary.Count;
         TurnExecution();
     }
 
+    #region Spawning
     private IEnumerator SpawnPlayers()
     {
         // if the grid isn't ready yet, then keep looping.
@@ -79,17 +90,18 @@ public class HostGameManager : MonoBehaviour
         }
         
         // Set each player to a random room/node in the maze/grid
-        foreach (Player player in AllClientPlayerDictionary.Values)
+        foreach (Player player in ActiveClientPlayerDictionary.Values)
         {
             player.CurrentNode = grid.GetRandomNode();
             SpawnTestPlayerObjects(player.CurrentNode.pos); //testing
+            UpdateInverseDictionary();
         }
         yield break;
     }
 
     private void SpawnMonsters()
     {
-        randomMonsterAmount = Random.Range(1, 6);
+        randomMonsterAmount = Random.Range(minMonsterSpawnAmt, maxMonsterSpawnAmt);
         for (int i = 0; i <= randomMonsterAmount; i++)
         {
             Node monsterNode = grid.GetRandomNode();
@@ -115,7 +127,7 @@ public class HostGameManager : MonoBehaviour
 
     private void SpawnTreasures()
     {
-        int randomTreasureAmt = Random.Range(10, 30);
+        int randomTreasureAmt = Random.Range(minTreasureSpawnAmt, maxTreasureSpawnAmt);
         for (int i = 0; i <= randomTreasureAmt; i++)
         {
             Node treasureNode = grid.GetRandomNode();
@@ -133,21 +145,31 @@ public class HostGameManager : MonoBehaviour
     {
         Node exitNode = grid.GetRandomNode();
         exitNode.DungeonExit = true;
+        Instantiate(ExitGO, exitNode.pos, Quaternion.identity);
     }
+    #endregion
 
     private void TurnExecution()
     {
-        // Send player turn
-        int turn = turnManager.NextTurn(ActiveClientPlayerDictionary.Count);
-        currentActivePlayer = playerTurnList[turn];
-        Client currentActiveClient;
-        ActivePlayerClientDictionary.TryGetValue(currentActivePlayer, out currentActiveClient); // make the dictionaries into a struct, tip from Geoffrey. EDIT struct should be used for value types, not reference types
+        // Send player turn if there are players left
+        if (ActiveClientPlayerDictionary.Count > 0)
+        {
+            int turn = turnManager.NextTurn(ActiveClientPlayerDictionary.Count);
+            currentActivePlayer = playerTurnList[turn];
+            Client currentActiveClient;
+            inverseActiveDictionary.TryGetValue(currentActivePlayer, out currentActiveClient); // make the dictionaries into a struct, tip from Geoffrey. EDIT struct should be used for value types, not reference types
 
-        // Send Player turn
-        SendPlayerTurn(currentActiveClient);
+            // Send Player turn
+            SendPlayerTurn(currentActiveClient);
+
+            // Send Room Info
+            SendRoomInfo(currentActivePlayer.CurrentNode, currentActiveClient);
+        }
+        else // No players left = endgame
+        {
+            SendEndGame();
+        }
         
-        // Send Room Info
-        SendRoomInfo(currentActivePlayer.CurrentNode, currentActiveClient);
     }
 
     #region Send Game Messages
@@ -160,7 +182,7 @@ public class HostGameManager : MonoBehaviour
         var playerTurnMessage = new PlayerTurnMessage {
             PlayerID = activeTurnClient.PlayerID,
         };
-        foreach(Client c in AllClientPlayerDictionary.Keys)
+        foreach(Client c in AllClientPlayerDictionary.Keys) // Finished players still get to see this stuff
         {
             server.SendMessage(playerTurnMessage, c.Connection);
         }
@@ -180,26 +202,27 @@ public class HostGameManager : MonoBehaviour
         List<int> otherPlayerIDs = new List<int>();
         if (roomNode.Treasure)
         {
-            treasureAmt = Random.Range(minTreasureAmt, maxTreasureAmt);
+            treasureAmt = Random.Range(minTreasureContainingAmt, maxTreasureContainingAmt);
             roomNode.TreasureAmount = treasureAmt;
         }
-        // Get other Player info
-        //foreach(KeyValuePair<Client, Player> clientPlayerPair in ActiveClientPlayerDictionary)
-        //{
-        //    if (clientPlayerPair.Value.CurrentNode == roomNode && clientPlayerPair.Key != activeTurnClient)
-        //    {
-        //        numberOfOtherPlayers++;
-        //        otherPlayerIDs.Add(clientPlayerPair.Key.PlayerID);
-        //    }
-        //}
-        //byte numberOfOtherPlayersByte = System.Convert.ToByte(numberOfOtherPlayers);
+        
+        //Get everyone that is in this room
+        foreach (KeyValuePair<Client, Player> clientPlayerPair in ActiveClientPlayerDictionary)
+        {
+            if (clientPlayerPair.Value.CurrentNode == roomNode && clientPlayerPair.Key != activeTurnClient)
+            {
+                numberOfOtherPlayers++;
+                otherPlayerIDs.Add(clientPlayerPair.Key.PlayerID);
+            }
+        }
+        byte numberOfOtherPlayersByte = System.Convert.ToByte(numberOfOtherPlayers);
 
         var roomInfoMessage = new RoomInfoMessage {
             MoveDirections = (byte)openDirection,
             TreasureInRoom = (ushort)treasureAmt,
             ContainsMonster = monster,
             ContainsExit = exit,
-            NumberOfOtherPlayers = 0,
+            NumberOfOtherPlayers = numberOfOtherPlayersByte,
             OtherPlayerIDs = otherPlayerIDs
         };
         server.SendMessage(roomInfoMessage, activeTurnClient.Connection);
@@ -233,7 +256,7 @@ public class HostGameManager : MonoBehaviour
     private void SendObtainTreasure(int amt)
     {
         Client activeClient;
-        ActivePlayerClientDictionary.TryGetValue(currentActivePlayer, out activeClient);
+        inverseActiveDictionary.TryGetValue(currentActivePlayer, out activeClient);
         var message = new ObtainTreasureMessage {
             Amount = (ushort)amt
         };
@@ -246,7 +269,7 @@ public class HostGameManager : MonoBehaviour
     private void SendHitMonster(int dmg)
     {
         Client activeClient;
-        ActivePlayerClientDictionary.TryGetValue(currentActivePlayer, out activeClient);
+        inverseActiveDictionary.TryGetValue(currentActivePlayer, out activeClient);
         var message = new HitMonsterMessage() {
             PlayerID = activeClient.PlayerID,
             DamageDealt = (ushort)dmg
@@ -264,7 +287,7 @@ public class HostGameManager : MonoBehaviour
     private void SendHitByMonster(int newHP)
     {
         Client activeClient;
-        ActivePlayerClientDictionary.TryGetValue(currentActivePlayer, out activeClient);
+        inverseActiveDictionary.TryGetValue(currentActivePlayer, out activeClient);
         var message = new HitByMonsterMessage() {
             PlayerID = activeClient.PlayerID,
             NewHP = (ushort)newHP
@@ -281,7 +304,7 @@ public class HostGameManager : MonoBehaviour
     private void SendPlayerDefends()
     {
         Client activeClient;
-        ActivePlayerClientDictionary.TryGetValue(currentActivePlayer, out activeClient);
+        inverseActiveDictionary.TryGetValue(currentActivePlayer, out activeClient);
         var message = new PlayerDefendsMessage() { 
             PlayerID = activeClient.PlayerID, 
             NewHP = (ushort)currentActivePlayer.CurrentHP 
@@ -295,9 +318,16 @@ public class HostGameManager : MonoBehaviour
     /// <summary>
     /// Send to all clients when a player leaves the dungeon.
     /// </summary>
-    private void SendPlayerLeftDungeon()
+    private void SendPlayerLeftDungeon(Client leavingClient)
     {
-        throw new System.NotImplementedException();
+        var message = new PlayerLeftDungeonMessage() {
+            PlayerID = leavingClient.PlayerID
+        };
+        foreach(Client c in AllClientPlayerDictionary.Keys)
+        {
+            server.SendMessage(message, c.Connection);
+        }
+        
     }
 
     /// <summary>
@@ -305,8 +335,22 @@ public class HostGameManager : MonoBehaviour
     /// </summary>
     private void SendPlayerDies() 
     {
-        throw new System.NotImplementedException();
+        Debug.Log("Player DED");
+        Client activeClient = null;
+        inverseActiveDictionary.TryGetValue(currentActivePlayer, out activeClient);
+
         // remove client from the 2 active clients dictionary
+        ActiveClientPlayerDictionary.Remove(activeClient);
+        UpdateInverseDictionary();
+        playerTurnList.Remove(currentActivePlayer);
+
+        var message = new PlayerDiesMessage() {
+            PlayerID = activeClient.PlayerID
+        };
+        foreach(Client c in clientList)
+        {
+            server.SendMessage(message, c.Connection);
+        }
     }
 
     /// <summary>
@@ -314,7 +358,40 @@ public class HostGameManager : MonoBehaviour
     /// </summary>
     private void SendEndGame()
     {
-        throw new System.NotImplementedException();
+        byte numberOfScore = System.Convert.ToByte(AllClientPlayerDictionary.Count);
+        List<int> playerIDs = new List<int>();
+        List<ushort> highScores = new List<ushort>();
+
+        // Get the high scores and sort them
+        foreach (KeyValuePair<Client, Player> keyValuePair in AllClientPlayerDictionary)
+            highScores.Add((ushort)keyValuePair.Value.TreasureAmount);
+
+        highScores.Sort(); // sort ascending
+        highScores.Reverse(); // reverse for descending
+
+        // get the corresponding player. If players have the same score this will just randomly decide whose the first and whose the second
+        foreach(int highScore in highScores)
+        {
+            foreach(KeyValuePair<Client, Player> clientPlayerPair in AllClientPlayerDictionary)
+            {
+                if (highScore == clientPlayerPair.Value.TreasureAmount)
+                    playerIDs.Add(clientPlayerPair.Key.PlayerID);
+
+            }
+        }
+        
+        // Send the message
+        var message = new EndGameMessage() {
+            NumberOfScores = numberOfScore,
+            PlayerID = playerIDs,
+            HighScores = highScores
+        };
+        
+        foreach(Client c in clientList)
+        {
+            server.SendMessage(message, c.Connection);
+        }
+        
     }
     #endregion
 
@@ -323,7 +400,7 @@ public class HostGameManager : MonoBehaviour
     {
         var moveRequestMessage = (messageConnection.messageHeader as MoveRequestMessage);
         Client movingClient;
-        ActivePlayerClientDictionary.TryGetValue(currentActivePlayer, out movingClient);
+        inverseActiveDictionary.TryGetValue(currentActivePlayer, out movingClient);
 
         // if the player was in a room with others, then send player leave room
         foreach (KeyValuePair<Client, Player> clientPlayerPair in ActiveClientPlayerDictionary)
@@ -341,14 +418,15 @@ public class HostGameManager : MonoBehaviour
         currentActivePlayer.CurrentNode = newRoomNode;
         
 
-        // If player enters a room with others, send player enter room
+        // If player enters a room with others, send player enter room to the others
         foreach(KeyValuePair<Client, Player> keyValuePair in ActiveClientPlayerDictionary) // each active client
         {
             if (keyValuePair.Value.CurrentNode == currentActivePlayer.CurrentNode) // if the node is the same
             {
                 if (keyValuePair.Value == currentActivePlayer) // don't send to ourselves 
-                    continue;
+                    continue; // scrap that, I want the player to know he entered a room with others in it.
                 SendPlayerEnterRoom(keyValuePair.Key, movingClient);
+                SendPlayerEnterRoom(movingClient, keyValuePair.Key);
             }
         }
 
@@ -370,8 +448,8 @@ public class HostGameManager : MonoBehaviour
         
         // random bool playerHitfirst, if true player hits first
         bool hitPlayerFirst = true;
-        //if (Random.value >= .5f)
-            //hitPlayerFirst = true;
+        if (Random.value >= .5f)
+            hitPlayerFirst = true;
 
         if (hitPlayerFirst) // Player hits first
         {
@@ -392,7 +470,7 @@ public class HostGameManager : MonoBehaviour
                 if (currentActivePlayer.Dead)
                 {
                     // send dead message, do other stuff
-                    throw new System.NotImplementedException();
+                    SendPlayerDies();
                 }
             }           
         }
@@ -403,7 +481,7 @@ public class HostGameManager : MonoBehaviour
             if (currentActivePlayer.Dead) // if the player dies, then monster can't attack, go to next turn
             {
                 // send dead message, do other stuff
-                throw new System.NotImplementedException();
+                SendPlayerDies();
             }
 
             int monsterDmg = currentActivePlayer.DamageAmount + Random.Range(-variance, variance);
@@ -438,6 +516,29 @@ public class HostGameManager : MonoBehaviour
     public void HandleLeaveDungeonRequest(MessageConnection messageConnection)
     {
         var leaveDungeonRequestMessage = (messageConnection.messageHeader as LeaveDungeonRequestMessage);
+        // send the player left dungeon messages
+
+        // player is removed from the active client lists, which also shortens the turncycle
+        Client removeClient = null;
+        foreach (KeyValuePair<Client, Player> clientPlayerPair in ActiveClientPlayerDictionary)
+        {
+            if (clientPlayerPair.Key.Connection == messageConnection.connection) // the leaving client
+            {
+                SendPlayerLeftDungeon(clientPlayerPair.Key);
+                playerTurnList.Remove(clientPlayerPair.Value); // remove from the playerturnlist
+                removeClient = clientPlayerPair.Key; // I can't directly delete the client in the foreach, because that is not safe to do.
+                
+            }
+        }
+        if (removeClient != null)
+        {
+            ActiveClientPlayerDictionary.Remove(removeClient);
+            
+            UpdateInverseDictionary();
+        }
+        
+
+        TurnExecution();
     }
     #endregion
 
@@ -445,5 +546,14 @@ public class HostGameManager : MonoBehaviour
     private void SpawnTestPlayerObjects(Vector3 pos)
     {
         Instantiate(testSpawnPlayersGO, pos, testSpawnPlayersGO.transform.rotation);
+    }
+
+    private void UpdateInverseDictionary()
+    {
+        inverseActiveDictionary.Clear();
+        foreach(KeyValuePair<Client, Player> keyValuePair in ActiveClientPlayerDictionary)
+        {
+            inverseActiveDictionary.Add(keyValuePair.Value, keyValuePair.Key);
+        }
     }
 }

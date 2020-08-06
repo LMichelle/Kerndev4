@@ -1,5 +1,6 @@
 ﻿using Unity.Networking.Transport;
 using System.Collections.Generic;
+using UnityEngine;
 
 namespace KernDev.NetworkBehaviour
 {
@@ -24,7 +25,7 @@ namespace KernDev.NetworkBehaviour
         {
             base.SerializeObject(ref writer);
             writer.WriteByte(NumberOfScores);
-            for (int i = 0; i <= NumberOfScores; i++)
+            for (int i = 0; i < NumberOfScores; i++)
             {
                 writer.WriteInt(PlayerID[i]);
                 writer.WriteUShort(HighScores[i]);
@@ -35,10 +36,10 @@ namespace KernDev.NetworkBehaviour
         {
             base.DeserializeObject(ref reader);
             NumberOfScores = reader.ReadByte();
-            for (int i = 0; i <= NumberOfScores; i++)
+            for (int i = 0; i < NumberOfScores; i++)
             {
-                PlayerID[i] = reader.ReadInt();
-                HighScores[i] = reader.ReadUShort();
+                PlayerID.Add(reader.ReadInt());
+                HighScores.Add(reader.ReadUShort());
             }
         }
     }

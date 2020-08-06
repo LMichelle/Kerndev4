@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Collections;
 using UnityEngine;
 using UnityEngine.UI;
 using KernDev.NetworkBehaviour;
@@ -34,6 +35,7 @@ public class ClientGameManager : MonoBehaviour
         clientBehaviour = GameObject.FindGameObjectWithTag("Client").GetComponent<ClientBehaviour>();
         clientBehaviour.ClientGameManager = this;
         messagesText.text = "";
+        DisableAllButtons();
 
         ThisPlayer = new Player();
         ThisPlayer.SetStartValues(ThisClient.StartHP);
@@ -64,16 +66,19 @@ public class ClientGameManager : MonoBehaviour
         int numberOfOtherPlayers = System.Convert.ToInt32(message.NumberOfOtherPlayers);
         List<int> playerIDs = message.OtherPlayerIDs;
 
-        //for(int i=0; i <= numberOfOtherPlayers; i++)
-        //{
-        //    Color color = Color.white;
-        //    foreach (Client c in AllClientsList)
-        //    {
-        //        if (c.PlayerID == message.OtherPlayerIDs[i])
-        //            color = ColorExtensions.FromUInt(color, c.PlayerColour);
-        //    }
-        //    SetMessagesText(color, $"Player {message.OtherPlayerIDs[i]} is in this room.");
-        //}
+        if (numberOfOtherPlayers > 0)
+        {
+            for (int i = 0; i < numberOfOtherPlayers; i++)
+            {
+                Color color = Color.white;
+                foreach (Client c in AllClientsList)
+                {
+                    if (c.PlayerID == playerIDs[i]) ;
+                    color = ColorExtensions.FromUInt(color, c.PlayerColour);
+                }
+                SetMessagesText(color, $"Player {playerIDs[i]} is in this room.");
+            }
+        }
 
         if (!monster)
         {
@@ -81,6 +86,11 @@ public class ClientGameManager : MonoBehaviour
             {
                 claimTreasureButton.interactable = true;
                 SetMessagesText(Color.yellow, "There's treasure in this room!");
+            }
+            if (message.ContainsExit != 0)
+            {
+                exitDungeonButton.interactable = true;
+                SetMessagesText(Color.yellow, "You found the door to the exit!");
             }
             SetActiveDirectionButtons(openDirections);
             SetMessagesText(Color.white, $"You can go to the {openDirections}");
@@ -115,6 +125,8 @@ public class ClientGameManager : MonoBehaviour
                 color = ColorExtensions.FromUInt(color, c.PlayerColour);
         }
         SetMessagesText(color, $"Player {message.PlayerID} got attacked! His HP went down to {message.NewHP}!");
+        if(message.PlayerID == ThisClient.PlayerID)
+            ThisPlayer.CurrentHP = message.NewHP;
         SetHPTreasureText();
     }
 
@@ -162,6 +174,45 @@ public class ClientGameManager : MonoBehaviour
         }
         SetMessagesText(color, $"Player {message.PlayerID} left the room.");
     }
+
+    public void ShowPlayerLeftDungeonMessage(MessageConnection messageConnection)
+    {
+        var message = (messageConnection.messageHeader as PlayerLeftDungeonMessage);
+        Color color = Color.white;
+        foreach (Client c in AllClientsList)
+        {
+            if (c.PlayerID == message.PlayerID)
+                color = ColorExtensions.FromUInt(color, c.PlayerColour);
+        }
+        SetMessagesText(color, $"Player {message.PlayerID} left the dungeon!");
+    }
+
+    public void ShowPlayerDiesMessage(MessageConnection messageConnection)
+    {
+        var message = (messageConnection.messageHeader as PlayerDiesMessage);
+        Color color = Color.white;
+        foreach (Client c in AllClientsList)
+        {
+            if (c.PlayerID == message.PlayerID)
+                color = ColorExtensions.FromUInt(color, c.PlayerColour);
+        }
+        SetMessagesText(color, $"Player {message.PlayerID} died!");
+    }
+
+    public void ShowEndGameMessage(MessageConnection messageConnection)
+    {
+        var message = (messageConnection.messageHeader as EndGameMessage);
+        for (int i = 0; i < message.NumberOfScores; i++)
+        {
+            Color color = Color.white;
+            foreach (Client c in AllClientsList)
+            {
+                if (c.PlayerID == message.PlayerID[i])
+                    color = ColorExtensions.FromUInt(color, c.PlayerColour);
+            }
+            SetMessagesText(color, $"Player: {message.PlayerID[i]}'s score is {message.HighScores[i]}");
+        }
+    }
     #endregion
 
     #region SendRequests
@@ -169,6 +220,7 @@ public class ClientGameManager : MonoBehaviour
     {
         // The button has been clicked, so disable them.
         DisableAllButtons();
+        SetMessagesText(Color.white, $"You went {directionString}");
 
         Wall moveDirection = Wall.NORTH | Wall.EAST | Wall.SOUTH | Wall.WEST;
         switch (directionString)
@@ -273,6 +325,16 @@ public class ClientGameManager : MonoBehaviour
         string hexColor = ColorExtensions.colorToHex(color);
         messagesText.text += $"<color=#{hexColor}>" + text + "</color>\n";
         messagesText.rectTransform.sizeDelta = new Vector2(messagesText.rectTransform.sizeDelta.x, messagesText.rectTransform.sizeDelta.y + lineSpacing);
+    }
+
+    public IEnumerator ShowConnectionDisconnected()
+    {
+        DisableAllButtons();
+        SetMessagesText(Color.white, "The connection has been lost. You will be returned to start.");
+        yield return new WaitForSeconds(2f);
+        clientBehaviour.Disconnect();
+        Destroy(clientBehaviour.gameObject);
+        gameObject.GetComponent<SceneManagement>().ReloadScene();
     }
 
 }

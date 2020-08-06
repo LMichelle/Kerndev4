@@ -81,6 +81,7 @@ namespace KernDev.NetworkBehaviour
                 {
                     connections.RemoveAtSwapBack(i);
                     --i;
+                    // send who left
                 }
             }
 

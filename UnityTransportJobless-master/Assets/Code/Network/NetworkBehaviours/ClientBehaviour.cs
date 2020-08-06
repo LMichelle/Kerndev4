@@ -15,6 +15,7 @@ namespace KernDev.NetworkBehaviour
 
         private Queue<MessageConnection> messagesQueue;
         public MessageEvent[] ClientCallbacks = new MessageEvent[(int)MessageHeader.MessageType.Count];
+        private bool disconnectedMessage = false;
 
         private LobbyManager lobbyManager;
         public LobbyManager LobbyManager {
@@ -60,6 +61,11 @@ namespace KernDev.NetworkBehaviour
             if (!connection.IsCreated)
             {
                 Debug.Log("Can't create connection.");
+                if (clientGameManager != null && !disconnectedMessage)
+                {
+                    StartCoroutine(clientGameManager.ShowConnectionDisconnected());
+                    disconnectedMessage = true;
+                }   
                 return;
             }
 
@@ -163,10 +169,22 @@ namespace KernDev.NetworkBehaviour
                             messagesQueue.Enqueue(mcPlayerDefends);
                             break;
                         case MessageHeader.MessageType.PlayerLeftDungeon:
+                            var playerLeftDungeonMessage = new PlayerLeftDungeonMessage();
+                            playerLeftDungeonMessage.DeserializeObject(ref reader);
+                            MessageConnection mcPlayerLeftDungeon = new MessageConnection(connection, playerLeftDungeonMessage);
+                            messagesQueue.Enqueue(mcPlayerLeftDungeon);
                             break;
                         case MessageHeader.MessageType.PlayerDies:
+                            var playerDiesMessage = new PlayerDiesMessage();
+                            playerDiesMessage.DeserializeObject(ref reader);
+                            MessageConnection mcPlayerDies = new MessageConnection(connection, playerDiesMessage);
+                            messagesQueue.Enqueue(mcPlayerDies);
                             break;
                         case MessageHeader.MessageType.EndGame:
+                            var endGameMessage = new EndGameMessage();
+                            endGameMessage.DeserializeObject(ref reader);
+                            MessageConnection mcEndGame = new MessageConnection(connection, endGameMessage);
+                            messagesQueue.Enqueue(mcEndGame);
                             break;
                         case MessageHeader.MessageType.MoveRequest:
                             break;
@@ -237,6 +255,10 @@ namespace KernDev.NetworkBehaviour
             ClientCallbacks[(int)MessageHeader.MessageType.ObtainTreasure].AddListener(ClientGameManager.ShowObtainTreasureMessage);
             ClientCallbacks[(int)MessageHeader.MessageType.PlayerEnterRoom].AddListener(ClientGameManager.ShowPlayerEnterRoomMessage);
             ClientCallbacks[(int)MessageHeader.MessageType.PlayerLeaveRoom].AddListener(ClientGameManager.ShowPlayerLeaveRoomMessage);
+            ClientCallbacks[(int)MessageHeader.MessageType.PlayerLeftDungeon].AddListener(ClientGameManager.ShowPlayerLeftDungeonMessage);
+            ClientCallbacks[(int)MessageHeader.MessageType.EndGame].AddListener(ClientGameManager.ShowEndGameMessage);
+            ClientCallbacks[(int)MessageHeader.MessageType.PlayerDies].AddListener(ClientGameManager.ShowPlayerDiesMessage);
+
         }
 
         public void Disconnect()
