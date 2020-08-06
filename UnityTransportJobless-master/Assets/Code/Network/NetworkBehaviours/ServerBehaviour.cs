@@ -20,6 +20,8 @@ namespace KernDev.NetworkBehaviour
         public List<Client> clientList = new List<Client>();
         public int deniedMessageID = 0;
 
+        private bool doneInitializing = false;
+
         private HostGameManager hostGameManager;
         public HostGameManager HostGameManager { 
             get { return hostGameManager; }
@@ -35,12 +37,17 @@ namespace KernDev.NetworkBehaviour
         // invoked when I receive a message of the setname type.
         #endregion
 
-        void Start()
+        public void ServerStart(string ipAdress)
         {
             // Create network connection
             networkDriver = NetworkDriver.Create();
-            var endpoint = NetworkEndPoint.AnyIpv4;
+            var endpoint = NetworkEndPoint.LoopbackIpv4;
             endpoint.Port = 9000;
+
+            // override if playing online
+            if (ipAdress != "")
+                endpoint = NetworkEndPoint.Parse(ipAdress, 9000);
+            
 
             if (networkDriver.Bind(endpoint) != 0)
             {
@@ -67,169 +74,172 @@ namespace KernDev.NetworkBehaviour
             ServerCallbacks[(int)MessageHeader.MessageType.StartGame].AddListener(HandleStartGame);
             ServerCallbacks[(int)MessageHeader.MessageType.None].AddListener(HandleNone); // the optional one to keep the connection going in inactivity
             #endregion
-
+            doneInitializing = true;
         }
 
         void Update()
         {
-            networkJobHandle.Complete();
-
-            // Clean up connections
-            for (int i = 0; i < connections.Length; ++i)
+            if (doneInitializing)
             {
-                if (!connections[i].IsCreated)
+                networkJobHandle.Complete();
+
+                // Clean up connections
+                for (int i = 0; i < connections.Length; ++i)
                 {
-                    connections.RemoveAtSwapBack(i);
-                    --i;
-                    // send who left
-                }
-            }
-
-            // Accept connections
-            NetworkConnection connection;
-            while ((connection = networkDriver.Accept()) != default)
-            {
-                // We can only accept 4 connections
-                if (clientList.Count >= 4)
-                {
-                    // Send Request Denied Message
-                    SendRequestDeniedMessage(connection);
-                    //networkDriver.Disconnect(connection);
-                }
-                else
-                {
-                    connections.Add(connection);
-                    Debug.Log("Accepted connection");
-
-                    // Log the client & Send the Welcome Message
-                    bool host = false;
-                    if (connection.InternalId == 0)
-                        host = true;
-                    Client newClient = new Client(connection.InternalId, "", connection, host);
-                    newClient.AssignRandomColor();
-                    clientList.Add(newClient);
-                    SendWelcomeMessage(newClient);
-                }
-
-            }
-
-            // Read the stream
-            DataStreamReader reader;
-            for (int i = 0; i < connections.Length; ++i)
-            {
-                if (!connections[i].IsCreated) continue;
-
-                NetworkEvent.Type cmd;
-                while ((cmd = networkDriver.PopEventForConnection(connections[i], out reader)) != NetworkEvent.Type.Empty)
-                {
-                    if (cmd == NetworkEvent.Type.Data)
+                    if (!connections[i].IsCreated)
                     {
-                        var messageType = (MessageHeader.MessageType)reader.ReadUShort();
-                        switch (messageType)
+                        connections.RemoveAtSwapBack(i);
+                        --i;
+                        // send who left
+                    }
+                }
+
+                // Accept connections
+                NetworkConnection connection;
+                while ((connection = networkDriver.Accept()) != default)
+                {
+                    // We can only accept 4 connections
+                    if (clientList.Count >= 4)
+                    {
+                        // Send Request Denied Message
+                        SendRequestDeniedMessage(connection);
+                        //networkDriver.Disconnect(connection);
+                    }
+                    else
+                    {
+                        connections.Add(connection);
+                        Debug.Log("Accepted connection");
+
+                        // Log the client & Send the Welcome Message
+                        bool host = false;
+                        if (connection.InternalId == 0)
+                            host = true;
+                        Client newClient = new Client(connection.InternalId, "", connection, host);
+                        newClient.AssignRandomColor();
+                        clientList.Add(newClient);
+                        SendWelcomeMessage(newClient);
+                    }
+
+                }
+
+                // Read the stream
+                DataStreamReader reader;
+                for (int i = 0; i < connections.Length; ++i)
+                {
+                    if (!connections[i].IsCreated) continue;
+
+                    NetworkEvent.Type cmd;
+                    while ((cmd = networkDriver.PopEventForConnection(connections[i], out reader)) != NetworkEvent.Type.Empty)
+                    {
+                        if (cmd == NetworkEvent.Type.Data)
                         {
-                            #region Lobby Protocol
-                            case MessageHeader.MessageType.None:
-                                var noneMessage = new NoneMessage();
-                                noneMessage.DeserializeObject(ref reader);
-                                MessageConnection mcNone = new MessageConnection(connections[i], noneMessage);
-                                messagesQueue.Enqueue(mcNone);
-                                break;
-                            case MessageHeader.MessageType.NewPlayer:
-                                break;
-                            case MessageHeader.MessageType.Welcome:
-                                break;
-                            case MessageHeader.MessageType.SetName:
-                                var setNameMessage = new SetNameMessage();
-                                setNameMessage.DeserializeObject(ref reader);
-                                MessageConnection mcSetName = new MessageConnection(connections[i], setNameMessage);
-                                messagesQueue.Enqueue(mcSetName);
-                                break;
-                            case MessageHeader.MessageType.RequestDenied:
-                                break;
-                            case MessageHeader.MessageType.PlayerLeft:
-                                var playerLeftMessage = new PlayerLeftMessage();
-                                playerLeftMessage.DeserializeObject(ref reader);
-                                MessageConnection mcPlayerLeft = new MessageConnection(connections[i], playerLeftMessage);
-                                messagesQueue.Enqueue(mcPlayerLeft);
-                                break;
-                            case MessageHeader.MessageType.StartGame:
-                                var startGameMessage = new StartGameMessage();
-                                startGameMessage.DeserializeObject(ref reader);
-                                MessageConnection mcStartGame = new MessageConnection(connections[i], startGameMessage);
-                                messagesQueue.Enqueue(mcStartGame);
-                                break;
-                            #endregion
-                            #region Game Protocol
-                            case MessageHeader.MessageType.PlayerTurn:
-                                break;
-                            case MessageHeader.MessageType.RoomInfo:
-                                break;
-                            case MessageHeader.MessageType.PlayerEnterRoom:
-                                break;
-                            case MessageHeader.MessageType.PlayerLeaveRoom:
-                                break;
-                            case MessageHeader.MessageType.ObtainTreasure:
-                                break;
-                            case MessageHeader.MessageType.HitMonster:
-                                break;
-                            case MessageHeader.MessageType.HitByMonster:
-                                break;
-                            case MessageHeader.MessageType.PlayerDefends:
-                                break;
-                            case MessageHeader.MessageType.PlayerLeftDungeon:
-                                break;
-                            case MessageHeader.MessageType.PlayerDies:
-                                break;
-                            case MessageHeader.MessageType.EndGame:
-                                break;
-                            case MessageHeader.MessageType.MoveRequest:
-                                var moveRequestMessage = new MoveRequestMessage();
-                                moveRequestMessage.DeserializeObject(ref reader);
-                                var mcMoveRequest = new MessageConnection(connections[i], moveRequestMessage);
-                                messagesQueue.Enqueue(mcMoveRequest);
-                                break;
-                            case MessageHeader.MessageType.AttackRequest:
-                                var attackRequestMessage = new AttackRequestMessage();
-                                attackRequestMessage.DeserializeObject(ref reader);
-                                var mcAttackRequest = new MessageConnection(connections[i], attackRequestMessage);
-                                messagesQueue.Enqueue(mcAttackRequest);
-                                break;
-                            case MessageHeader.MessageType.DefendRequest:
-                                var defendRequestMessage = new DefendRequestMessage();
-                                defendRequestMessage.DeserializeObject(ref reader);
-                                var mcDefendRequest = new MessageConnection(connections[i], defendRequestMessage);
-                                messagesQueue.Enqueue(mcDefendRequest);
-                                break;
-                            case MessageHeader.MessageType.ClaimTreasureRequest:
-                                var claimTreasureRequestMessage = new ClaimTreasureRequestMessage();
-                                claimTreasureRequestMessage.DeserializeObject(ref reader);
-                                var mcClaimTreasureRequest = new MessageConnection(connections[i], claimTreasureRequestMessage);
-                                messagesQueue.Enqueue(mcClaimTreasureRequest);
-                                break;
-                            case MessageHeader.MessageType.LeaveDungeonRequest:
-                                var leaveDungeonRequestMessage = new LeaveDungeonRequestMessage();
-                                leaveDungeonRequestMessage.DeserializeObject(ref reader);
-                                var mcLeaveDungeonRequest = new MessageConnection(connections[i], leaveDungeonRequestMessage);
-                                messagesQueue.Enqueue(mcLeaveDungeonRequest);
-                                break;
-                            #endregion
-                            case MessageHeader.MessageType.Count:
-                                break;
-                            default:
-                                break;
+                            var messageType = (MessageHeader.MessageType)reader.ReadUShort();
+                            switch (messageType)
+                            {
+                                #region Lobby Protocol
+                                case MessageHeader.MessageType.None:
+                                    var noneMessage = new NoneMessage();
+                                    noneMessage.DeserializeObject(ref reader);
+                                    MessageConnection mcNone = new MessageConnection(connections[i], noneMessage);
+                                    messagesQueue.Enqueue(mcNone);
+                                    break;
+                                case MessageHeader.MessageType.NewPlayer:
+                                    break;
+                                case MessageHeader.MessageType.Welcome:
+                                    break;
+                                case MessageHeader.MessageType.SetName:
+                                    var setNameMessage = new SetNameMessage();
+                                    setNameMessage.DeserializeObject(ref reader);
+                                    MessageConnection mcSetName = new MessageConnection(connections[i], setNameMessage);
+                                    messagesQueue.Enqueue(mcSetName);
+                                    break;
+                                case MessageHeader.MessageType.RequestDenied:
+                                    break;
+                                case MessageHeader.MessageType.PlayerLeft:
+                                    var playerLeftMessage = new PlayerLeftMessage();
+                                    playerLeftMessage.DeserializeObject(ref reader);
+                                    MessageConnection mcPlayerLeft = new MessageConnection(connections[i], playerLeftMessage);
+                                    messagesQueue.Enqueue(mcPlayerLeft);
+                                    break;
+                                case MessageHeader.MessageType.StartGame:
+                                    var startGameMessage = new StartGameMessage();
+                                    startGameMessage.DeserializeObject(ref reader);
+                                    MessageConnection mcStartGame = new MessageConnection(connections[i], startGameMessage);
+                                    messagesQueue.Enqueue(mcStartGame);
+                                    break;
+                                #endregion
+                                #region Game Protocol
+                                case MessageHeader.MessageType.PlayerTurn:
+                                    break;
+                                case MessageHeader.MessageType.RoomInfo:
+                                    break;
+                                case MessageHeader.MessageType.PlayerEnterRoom:
+                                    break;
+                                case MessageHeader.MessageType.PlayerLeaveRoom:
+                                    break;
+                                case MessageHeader.MessageType.ObtainTreasure:
+                                    break;
+                                case MessageHeader.MessageType.HitMonster:
+                                    break;
+                                case MessageHeader.MessageType.HitByMonster:
+                                    break;
+                                case MessageHeader.MessageType.PlayerDefends:
+                                    break;
+                                case MessageHeader.MessageType.PlayerLeftDungeon:
+                                    break;
+                                case MessageHeader.MessageType.PlayerDies:
+                                    break;
+                                case MessageHeader.MessageType.EndGame:
+                                    break;
+                                case MessageHeader.MessageType.MoveRequest:
+                                    var moveRequestMessage = new MoveRequestMessage();
+                                    moveRequestMessage.DeserializeObject(ref reader);
+                                    var mcMoveRequest = new MessageConnection(connections[i], moveRequestMessage);
+                                    messagesQueue.Enqueue(mcMoveRequest);
+                                    break;
+                                case MessageHeader.MessageType.AttackRequest:
+                                    var attackRequestMessage = new AttackRequestMessage();
+                                    attackRequestMessage.DeserializeObject(ref reader);
+                                    var mcAttackRequest = new MessageConnection(connections[i], attackRequestMessage);
+                                    messagesQueue.Enqueue(mcAttackRequest);
+                                    break;
+                                case MessageHeader.MessageType.DefendRequest:
+                                    var defendRequestMessage = new DefendRequestMessage();
+                                    defendRequestMessage.DeserializeObject(ref reader);
+                                    var mcDefendRequest = new MessageConnection(connections[i], defendRequestMessage);
+                                    messagesQueue.Enqueue(mcDefendRequest);
+                                    break;
+                                case MessageHeader.MessageType.ClaimTreasureRequest:
+                                    var claimTreasureRequestMessage = new ClaimTreasureRequestMessage();
+                                    claimTreasureRequestMessage.DeserializeObject(ref reader);
+                                    var mcClaimTreasureRequest = new MessageConnection(connections[i], claimTreasureRequestMessage);
+                                    messagesQueue.Enqueue(mcClaimTreasureRequest);
+                                    break;
+                                case MessageHeader.MessageType.LeaveDungeonRequest:
+                                    var leaveDungeonRequestMessage = new LeaveDungeonRequestMessage();
+                                    leaveDungeonRequestMessage.DeserializeObject(ref reader);
+                                    var mcLeaveDungeonRequest = new MessageConnection(connections[i], leaveDungeonRequestMessage);
+                                    messagesQueue.Enqueue(mcLeaveDungeonRequest);
+                                    break;
+                                #endregion
+                                case MessageHeader.MessageType.Count:
+                                    break;
+                                default:
+                                    break;
+                            }
+                        }
+                        else if (cmd == NetworkEvent.Type.Disconnect)
+                        {
+                            Debug.Log("Client disconnected");
+                            connections[i] = default;
                         }
                     }
-                    else if (cmd == NetworkEvent.Type.Disconnect)
-                    {
-                        Debug.Log("Client disconnected");
-                        connections[i] = default;
-                    }
                 }
-            }
 
-            networkJobHandle = networkDriver.ScheduleUpdate();
-            networkJobHandle.Complete();
-            ProcessMessagesQueue();
+                networkJobHandle = networkDriver.ScheduleUpdate();
+                networkJobHandle.Complete();
+                ProcessMessagesQueue();
+            }
         }
 
         private void ProcessMessagesQueue()

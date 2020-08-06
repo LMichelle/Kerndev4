@@ -3,25 +3,31 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 using KernDev.NetworkBehaviour;
+using System.Linq;
 
 namespace Assets.Code
 {
     public class LobbyManager : MonoBehaviour
     {
         private Text outputMessagesText;
-        public InputField inputField;
-        private ClientBehaviour clientBehaviour;
-        [SerializeField]
-        private int lineSpacing = 35;
-
+        public InputField nameInputField;
+        public InputField ipInputField;
+        public GameObject lobbyUIGO, hostUIGO, joinUIGO, hostOptionsGO, joinOptionsGO;
+        public Text hostMessagesText, joinMessagesText;
+        
         [SerializeField]
         private Text outputLogsText;
+
+        [SerializeField]
+        private int lineSpacing = 35;
 
         [SerializeField]
         private Button hostGameButton, joinGameButton;
 
         [SerializeField]
         private int minPlayerHP = 30, maxPlayerHP = 50;
+
+        private ClientBehaviour clientBehaviour;
 
         private Client thisClient;
         private List<Client> allClientsList = new List<Client>();
@@ -38,7 +44,7 @@ namespace Assets.Code
         private void Update()
         {
             // Set Host and Join buttons to interactable if name has been typed
-            if (inputField.text == null || inputField.text == "")
+            if (nameInputField.text == null || nameInputField.text == "")
             {
                 hostGameButton.interactable = false;
                 joinGameButton.interactable = false;
@@ -52,26 +58,68 @@ namespace Assets.Code
         }
 
         public void HostGame() // when hosting the game, add both a server and client.
-        {
+        {  
+            if (ipInputField.text != "")
+            {
+                // validize the IP adress
+                bool valid = ValidateIPv4(ipInputField.text);
+                // if not valid, return.
+                if (!valid)
+                {
+                    outputLogsText.text = "The IP Adress is invalid.";
+                    return;
+                }
+            }
+
+            // Add the Server
             GameObject server = new GameObject();
-            server.AddComponent<ServerBehaviour>();
+            server.AddComponent<ServerBehaviour>().ServerStart(ipInputField.text);
             server.name = "Server";
             server.tag = "Server";
             DontDestroyOnLoad(server);
             outputLogsText.text += "The room is created.";
+
+            // Add the Client
             GameObject client = new GameObject();
             clientBehaviour = client.AddComponent<ClientBehaviour>();
+            clientBehaviour.ClientStart(ipInputField.text);
             client.name = "Client";
             client.tag = "Client";
+
+            // Update the UI
+            lobbyUIGO.SetActive(true);
+            hostUIGO.SetActive(true);
+            gameObject.GetComponent<LobbyManager>().SetOutputText(hostMessagesText);
+            hostOptionsGO.SetActive(true);
+            
         }
 
         public void JoinGame()
         {
+            if (ipInputField.text != "")
+            {
+                // validize the IP adress
+                bool valid = ValidateIPv4(ipInputField.text);
+                // if not valid, return.
+                if (!valid)
+                {
+                    outputLogsText.text = "The IP Adress is invalid.";
+                    return;
+                }
+            }
+
             GameObject client = new GameObject();
             clientBehaviour = client.AddComponent<ClientBehaviour>();
+            clientBehaviour.ClientStart(ipInputField.text);
             client.name = "Client";
             client.tag = "Client";
             outputLogsText.text += "Joined the game.";
+
+            // Update the UI
+            lobbyUIGO.SetActive(true);
+            joinUIGO.SetActive(true);
+            gameObject.GetComponent<LobbyManager>().SetOutputText(joinMessagesText);
+            joinOptionsGO.SetActive(true);
         }
 
         // Show Messages -------------------------------------------------------------
@@ -151,7 +199,7 @@ namespace Assets.Code
         // Send Messages -------------------------------------------------------------
         public void SendSetNameMessage()
         {
-            string name = inputField.text;
+            string name = nameInputField.text;
             var setNameMessage = new SetNameMessage {
                 Name = name
             };      
@@ -260,6 +308,24 @@ namespace Assets.Code
         {
             outputMessagesText.text += text + "\n";
             outputMessagesText.rectTransform.sizeDelta = new Vector2(outputMessagesText.rectTransform.sizeDelta.x, outputMessagesText.rectTransform.sizeDelta.y + lineSpacing);
+        }
+
+        public bool ValidateIPv4(string ipString)
+        {
+            if (System.String.IsNullOrWhiteSpace(ipString))
+            {
+                return false;
+            }
+
+            string[] splitValues = ipString.Split('.');
+            if (splitValues.Length != 4)
+            {
+                return false;
+            }
+
+            byte tempForParsing;
+
+            return splitValues.All(r => byte.TryParse(r, out tempForParsing));
         }
     }
 }
