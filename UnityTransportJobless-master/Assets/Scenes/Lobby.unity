@@ -3863,12 +3863,12 @@ MonoBehaviour:
   gridGO: {fileID: 5574241064367834872, guid: 19bda411bc742e84192906889c95d1f6, type: 3}
   testSpawnPlayersGO: {fileID: 7031989043103648479, guid: 6f2798b448b602c45b4fad84a15572df,
     type: 3}
-  minMonsterSpawnAmt: 5
-  maxMonsterSpawnAmt: 10
+  minMonsterSpawnAmt: 1
+  maxMonsterSpawnAmt: 2
   minMonsterHP: 10
   maxMonsterHP: 15
-  minMonsterDmg: 15
-  maxMonsterDmg: 20
+  minMonsterDmg: 2
+  maxMonsterDmg: 5
   minPlayerDmg: 3
   maxPlayerDmg: 7
   variance: 2
@@ -3878,6 +3878,7 @@ MonoBehaviour:
   maxTreasureContainingAmt: 300
   minTreasureSpawnAmt: 2
   maxTreasureSpawnAmt: 3
+  healAttackDmgSubtraction: -3
 --- !u!114 &713337508
 MonoBehaviour:
   m_ObjectHideFlags: 0

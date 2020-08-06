@@ -29,6 +29,8 @@ public class HostGameManager : MonoBehaviour
     private int minTreasureContainingAmt = 200, maxTreasureContainingAmt = 300;
     [SerializeField]
     private int minTreasureSpawnAmt = 10, maxTreasureSpawnAmt = 30;
+    [SerializeField]
+    private int healAttackDmgSubtraction = -3;
     
     
     private GridSystem grid;
@@ -498,8 +500,44 @@ public class HostGameManager : MonoBehaviour
 
     public void HandleDefendRequest(MessageConnection messageConnection)
     {
-        currentActivePlayer.Heal(Random.Range(minHealAmt, maxHealAmt));
-        SendPlayerDefends();
+        // Get the monster
+        Node monsterNode = grid.GetSpecificNodeInstance(currentActivePlayer.CurrentNode);
+        Monster monster = new Monster();
+        foreach (Monster m in monsterList)
+        {
+            if (m.CurrentNode == monsterNode)
+                monster = m;
+        }
+
+        // Will player or monster go first?
+        bool healPlayerFirst = true;
+        if (Random.value >= .5f)
+            healPlayerFirst = true;
+
+        if (healPlayerFirst)
+        {
+            // heal player
+            currentActivePlayer.Heal(Random.Range(minHealAmt, maxHealAmt));
+            SendPlayerDefends();
+
+            // Take damage but less than usually
+            currentActivePlayer.TakeDamage(monster.DamageAmount + Random.Range(-variance, variance) - healAttackDmgSubtraction);
+            SendHitByMonster(currentActivePlayer.CurrentHP);
+            if (currentActivePlayer.Dead)
+                SendPlayerDies();
+        }
+        else
+        {
+            // Take damage but less than usually
+            currentActivePlayer.TakeDamage(monster.DamageAmount + Random.Range(-variance, variance) - healAttackDmgSubtraction);
+            SendHitByMonster(currentActivePlayer.CurrentHP);
+            if (currentActivePlayer.Dead)
+                SendPlayerDies();
+
+            // heal player
+            currentActivePlayer.Heal(Random.Range(minHealAmt, maxHealAmt));
+            SendPlayerDefends();
+        }
         TurnExecution();
     }
 
@@ -528,8 +566,6 @@ public class HostGameManager : MonoBehaviour
         }
         }
 
-        //currentActivePlayer.TreasureAmount += treasureNode.TreasureAmount;
-        //SendObtainTreasure(treasureNode.TreasureAmount);
         SendObtainTreasure(treasureAmountPerPlayer, receiveTreasureClients);
         treasureNode.Treasure = false;
         TurnExecution();
