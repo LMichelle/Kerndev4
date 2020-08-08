@@ -4492,6 +4492,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 966c82675eacfa247a6ebc67a99722f8, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  outputMessagesText: {fileID: 1669416706}
   usernameInputField: {fileID: 663844041}
   passwordInputField: {fileID: 1877875032}
   nameInputField: {fileID: 376412614}
