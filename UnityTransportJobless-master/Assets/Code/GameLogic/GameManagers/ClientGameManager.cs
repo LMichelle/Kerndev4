@@ -337,4 +337,17 @@ public class ClientGameManager : MonoBehaviour
         gameObject.GetComponent<SceneManagement>().ReloadScene();
     }
 
+    private IEnumerator Restart()
+    {
+        SetMessagesText(Color.white, "The game will soon restart.");
+        bool countdown = true;
+        while (countdown)
+        {
+            for (int i = 3; i > 0; i--)
+                yield return new WaitForSeconds(1f);
+            countdown = false;
+        }
+
+    }
+
 }

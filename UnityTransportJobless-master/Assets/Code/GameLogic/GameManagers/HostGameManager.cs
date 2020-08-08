@@ -600,18 +600,20 @@ public class HostGameManager : MonoBehaviour
     }
     #endregion
 
-    // testing stuff
+    private void UpdateInverseDictionary()
+    {
+        inverseActiveDictionary.Clear();
+        foreach (KeyValuePair<Client, Player> keyValuePair in ActiveClientPlayerDictionary)
+        {
+            inverseActiveDictionary.Add(keyValuePair.Value, keyValuePair.Key);
+        }
+    }
+
+    // Testing
     private void SpawnTestPlayerObjects(Vector3 pos)
     {
         Instantiate(testSpawnPlayersGO, pos, testSpawnPlayersGO.transform.rotation);
     }
 
-    private void UpdateInverseDictionary()
-    {
-        inverseActiveDictionary.Clear();
-        foreach(KeyValuePair<Client, Player> keyValuePair in ActiveClientPlayerDictionary)
-        {
-            inverseActiveDictionary.Add(keyValuePair.Value, keyValuePair.Key);
-        }
-    }
+    
 }

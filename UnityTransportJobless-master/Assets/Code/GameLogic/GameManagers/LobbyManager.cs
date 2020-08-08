@@ -10,10 +10,13 @@ namespace Assets.Code
     public class LobbyManager : MonoBehaviour
     {
         private Text outputMessagesText;
+        public InputField usernameInputField;
+        public InputField passwordInputField;
         public InputField nameInputField;
         public InputField ipInputField;
-        public GameObject lobbyUIGO, hostUIGO, joinUIGO, hostOptionsGO, joinOptionsGO;
+        public GameObject lobbyUIGO, hostUIGO, joinUIGO, hostOptionsGO, joinOptionsGO, loginUIGO;
         public Text hostMessagesText, joinMessagesText;
+        private UserData myData;
         
         [SerializeField]
         private Text outputLogsText;
@@ -39,6 +42,7 @@ namespace Assets.Code
         private void Start()
         {
             StartCoroutine(SendKeepConnection());
+            StartCoroutine(DataBaseStart());
         }
 
         private void Update()
@@ -55,6 +59,49 @@ namespace Assets.Code
                 joinGameButton.interactable = true;
             }
 
+        }
+
+        public void Login()
+        {
+            StartCoroutine(CheckData());
+        }
+
+        /// <summary>
+        /// Logs in to the database and creates a session.
+        /// </summary>
+        /// <returns></returns>
+        private IEnumerator DataBaseStart()
+        {
+            yield return StartCoroutine(DatabaseManager.GetHTTP("ServerLogin.php?id=" + DatabaseManager.serverID + "&Password=" + DatabaseManager.serverPassword));
+            DatabaseManager.sessionID = DatabaseManager.response;
+            Debug.Log(DatabaseManager.sessionID);
+        }
+
+        /// <summary>
+        /// Checks if the player login is valid and if so, continues to the game.
+        /// </summary>
+        /// <returns></returns>
+        public IEnumerator CheckData()
+        {
+            yield return StartCoroutine(DatabaseManager.GetHTTP($"PlayerLoginServer.php?PHPSESSID={DatabaseManager.sessionID}&Email={usernameInputField.text}&Password={passwordInputField.text}"));
+            if(DatabaseManager.response == "Invalid e-mail address.<br />") {
+                outputLogsText.text = "Email adress is invalid.";
+                yield break;
+            }
+            else if (DatabaseManager.response == "nullError (You have an error in your SQL syntax; check the manual that corresponds to your MariaDB server version for the right syntax to use near '' at line 1) 1064")
+            {
+                outputLogsText.text = "Password is invalid.";
+                yield break;
+            }
+            else if (DatabaseManager.response != 0 + "")
+            {
+                myData = JsonUtility.FromJson<UserData>(DatabaseManager.response);
+                loginUIGO.SetActive(false);
+            }
+            else
+            {
+                outputLogsText.text = "Something went wrong. Please try again later.";
+            }
         }
 
         public void HostGame() // when hosting the game, add both a server and client.
@@ -122,7 +169,7 @@ namespace Assets.Code
             joinOptionsGO.SetActive(true);
         }
 
-        // Show Messages -------------------------------------------------------------
+        #region Show Messages
         public void ShowNewPlayerMessage(MessageConnection messageConnection)
         {
             var message = (messageConnection.messageHeader as NewPlayerMessage);
@@ -196,7 +243,9 @@ namespace Assets.Code
             StartCoroutine(StartGameCountDown());
         }
 
-        // Send Messages -------------------------------------------------------------
+        #endregion
+
+        #region Send Messages
         public void SendSetNameMessage()
         {
             string name = nameInputField.text;
@@ -261,9 +310,9 @@ namespace Assets.Code
             }
         }
 
+        #endregion
 
 
-        // Other Functions -------------------------------------------------------------
         public IEnumerator StartGameCountDown()
         {
             bool countdown = true;
@@ -296,7 +345,7 @@ namespace Assets.Code
         }
 
         /// <summary>
-        /// Used on the buttons to get the client's messages text GO or the host's.
+        /// Used to determine the client's messages text GO or the host's.
         /// </summary>
         /// <param name="text"></param>
         public void SetOutputText(Text text)

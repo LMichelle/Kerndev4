@@ -47,7 +47,7 @@ MonoBehaviour:
     type: 3}
   wallObject: {fileID: 2130093658552355326, guid: 8d8c34d6f2e8b8048b5d7deb9c2e8bec,
     type: 3}
-  gridWorldSize: {x: 5, y: 5}
+  gridWorldSize: {x: 10, y: 10}
   nodeRadius: 0.5
   distanceBetweenNodes: 0
   finishedGenerating: 1
