@@ -4,14 +4,14 @@ using UnityEngine;
 
 namespace KernDev.GameLogic
 {    
-    public class Actor
+    public class Opponent
     {
         public int CurrentHP { get; internal set; }
         public Node CurrentNode { get; set; }
         public int DamageAmount { get; set; }
         public bool Dead { get; private set; }
 
-        public virtual void SetStartValues(int startHP)
+        public virtual void SetStartHP(int startHP)
         {
             CurrentHP = startHP;
         }
@@ -28,15 +28,15 @@ namespace KernDev.GameLogic
         }
     }
 
-    public class Player : Actor
+    public class Player : Opponent
     {
         public int TreasureAmount { get; set; }
 
         private int startHP;
 
-        public override void SetStartValues(int startHP)
+        public override void SetStartHP(int startHP)
         {      
-            base.SetStartValues(startHP);
+            base.SetStartHP(startHP);
             this.startHP = startHP;
         }
 

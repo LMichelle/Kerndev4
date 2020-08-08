@@ -2,15 +2,15 @@
 
 public static class ColorExtensions
 {
-    public static uint ToUInt(this Color color) => ((Color32)color).ToUInt();
-    public static Color FromUInt(this Color color, uint value) => ((Color32)color).FromUInt(value);
+    public static uint ColorToUInt(this Color color) => ((Color32)color).ColorToUInt();
+    public static Color ColorFromUInt(this Color color, uint value) => ((Color32)color).ColorFromUInt(value);
 
-    public static uint ToUInt(this Color32 color32)
+    public static uint ColorToUInt(this Color32 color32)
     {
         return (uint)((color32[0] << 24) | (color32[1] << 16) | (color32[2] << 8) | color32[3]);
     }
 
-    public static Color32 FromUInt(this Color32 color32, uint value)
+    public static Color32 ColorFromUInt(this Color32 color32, uint value)
     {
         color32[0] = (byte)((value >> 24) & 0xFF);
         color32[1] = (byte)((value >> 16) & 0xFF);
@@ -20,14 +20,13 @@ public static class ColorExtensions
         return color32;
     }
 
-    // Note that Color32 and Color implictly convert to each other. You may pass a Color object to this method without first casting it.
-    public static string colorToHex(Color32 color)
+    public static string ColorToHex(Color32 color)
     {
         string hex = color.r.ToString("X2") + color.g.ToString("X2") + color.b.ToString("X2");
         return hex;
     }
 
-    public static Color hexToColor(string hex)
+    public static Color HexToColor(string hex)
     {
         hex = hex.Replace("0x", "");//in case the string is formatted 0xFFFFFF
         hex = hex.Replace("#", "");//in case the string is formatted #FFFFFF

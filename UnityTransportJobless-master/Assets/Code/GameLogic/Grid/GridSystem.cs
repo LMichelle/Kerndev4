@@ -15,8 +15,6 @@ namespace KernDev.GameLogic
         public Node[,] NodeArray { get; private set; }
         private float nodeDiameter;
         private int gridSizeX, gridSizeY;
-        //[SerializeField]
-        //private Transform startPos;
         public bool finishedGenerating = false;
 
         public void StartGrid()
@@ -30,12 +28,10 @@ namespace KernDev.GameLogic
         public void CreateGrid()
         {
             NodeArray = new Node[gridSizeX, gridSizeY];
-            //Vector3 bottomLeft = transform.position - Vector3.right * gridWorldSize.x / 2 - Vector3.up * gridWorldSize.y / 2;
             for (int x = 0; x < gridSizeX; x++)
             {
                 for (int y = 0; y < gridSizeY; y++)
                 {
-                    //Vector3 worldPoint = bottomLeft + Vector3.right * (x * nodeDiameter + nodeRadius) + Vector3.up * (y * nodeDiameter + nodeRadius);
                     NodeArray[x, y] = new Node(new Vector3(x, y, 0), x, y);
                     NodeArray[x, y].walls = Wall.EAST | Wall.SOUTH | Wall.NORTH | Wall.WEST; // this sets all walls
                 }
@@ -64,7 +60,7 @@ namespace KernDev.GameLogic
                 }
             }
 
-            SpawnMazeObjects();
+           //SpawnMazeObjects();
             finishedGenerating = true;
         }
 
@@ -124,6 +120,7 @@ namespace KernDev.GameLogic
             }
         }
 
+        // testing
         private void SpawnMazeObjects()
         {
             // Create a parent gameobject to orden the hierarchy
@@ -192,38 +189,5 @@ namespace KernDev.GameLogic
             return ref NodeArray[checkX, checkY];
         }
 
-        private void OnDrawGizmos()
-        {
-            Gizmos.DrawWireCube(transform.position, new Vector3(gridWorldSize.x, gridWorldSize.y, .01f));
-
-            if (NodeArray != null)
-            {
-                foreach (Node n in NodeArray)
-                {
-                    Gizmos.color = Color.green;
-                    Gizmos.DrawCube(n.pos, new Vector3(nodeDiameter - distanceBetweenNodes, nodeDiameter - distanceBetweenNodes, .1f));
-                    if ((n.walls & Wall.NORTH) != 0) // if n has a wall north
-                    {
-                        Gizmos.color = Color.black;
-                        Gizmos.DrawCube(n.pos + new Vector3(0, nodeRadius), new Vector3(nodeDiameter, nodeDiameter * .1f, .2f));
-                    }
-                    if ((n.walls & Wall.EAST) != 0)
-                    {
-                        Gizmos.color = Color.black;
-                        Gizmos.DrawCube(n.pos + new Vector3(nodeRadius, 0), new Vector3(nodeDiameter * .1f, nodeDiameter, .2f));
-                    }
-                    if ((n.walls & Wall.WEST) != 0)
-                    {
-                        Gizmos.color = Color.black;
-                        Gizmos.DrawCube(n.pos + new Vector3(-nodeRadius, 0), new Vector3(nodeDiameter * .1f, nodeDiameter, .2f));
-                    }
-                    if ((n.walls & Wall.SOUTH) != 0)
-                    {
-                        Gizmos.color = Color.black;
-                        Gizmos.DrawCube(n.pos + new Vector3(0, -nodeRadius), new Vector3(nodeDiameter, nodeDiameter * .1f, .2f));
-                    }
-                }
-            }
-        }
     }
 }

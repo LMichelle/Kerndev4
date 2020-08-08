@@ -11,7 +11,6 @@ namespace KernDev.GameLogic
         public bool DungeonExit { get; set; }
         public bool Monster { get; set; }
         public bool Treasure { get; set; }
-
         public int TreasureAmount { get; set; }
 
         public Node(Vector3 pos, int gridX, int gridY)

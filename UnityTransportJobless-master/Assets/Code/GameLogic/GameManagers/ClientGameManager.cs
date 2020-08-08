@@ -14,8 +14,9 @@ public class ClientGameManager : MonoBehaviour
     private float lineSpacing = 35;
     [SerializeField]
     private GameObject GameUI;
+    public Text messagesText;
     [SerializeField]
-    private Text messagesText, HPTreasureText;
+    private Text HPTreasureText;
     [SerializeField]
     private Button claimTreasureButton, attackButton, defendButton, exitDungeonButton;
     [SerializeField]
@@ -29,8 +30,10 @@ public class ClientGameManager : MonoBehaviour
 
     private ClientBehaviour clientBehaviour;
 
-    private void Start()
+    public void StartGame(Client thisClient, List<Client> allClients)
     {
+        ThisClient = thisClient;
+        AllClientsList = allClients;
         GameUI.SetActive(true);
         clientBehaviour = GameObject.FindGameObjectWithTag("Client").GetComponent<ClientBehaviour>();
         clientBehaviour.ClientGameManager = this;
@@ -38,7 +41,7 @@ public class ClientGameManager : MonoBehaviour
         DisableAllButtons();
 
         ThisPlayer = new Player();
-        ThisPlayer.SetStartValues(ThisClient.StartHP);
+        ThisPlayer.SetStartHP(ThisClient.StartHP);
         ThisPlayer.TreasureAmount = 0;
         SetHPTreasureText();
 
@@ -52,7 +55,7 @@ public class ClientGameManager : MonoBehaviour
         foreach (Client c in AllClientsList)
         {
             if (c.PlayerID == message.PlayerID)
-                color = ColorExtensions.FromUInt(color, c.PlayerColour);
+                color = ColorExtensions.ColorFromUInt(color, c.PlayerColour);
         }
         SetMessagesText(color, $"It's Player {message.PlayerID}'s turn!");
     }
@@ -74,7 +77,7 @@ public class ClientGameManager : MonoBehaviour
                 foreach (Client c in AllClientsList)
                 {
                     if (c.PlayerID == playerIDs[i]) ;
-                    color = ColorExtensions.FromUInt(color, c.PlayerColour);
+                    color = ColorExtensions.ColorFromUInt(color, c.PlayerColour);
                 }
                 SetMessagesText(color, $"Player {playerIDs[i]} is in this room.");
             }
@@ -110,7 +113,7 @@ public class ClientGameManager : MonoBehaviour
         foreach (Client c in AllClientsList)
         {
             if (c.PlayerID == message.PlayerID)
-                color = ColorExtensions.FromUInt(color, c.PlayerColour);
+                color = ColorExtensions.ColorFromUInt(color, c.PlayerColour);
         }
         SetMessagesText(color, $"Player {message.PlayerID} attacked the monster with {message.DamageDealt} hitpoints!");
     }
@@ -122,7 +125,7 @@ public class ClientGameManager : MonoBehaviour
         foreach (Client c in AllClientsList)
         {
             if (c.PlayerID == message.PlayerID)
-                color = ColorExtensions.FromUInt(color, c.PlayerColour);
+                color = ColorExtensions.ColorFromUInt(color, c.PlayerColour);
         }
         SetMessagesText(color, $"Player {message.PlayerID} got attacked! His HP went down to {message.NewHP}!");
         if(message.PlayerID == ThisClient.PlayerID)
@@ -137,7 +140,7 @@ public class ClientGameManager : MonoBehaviour
         foreach (Client c in AllClientsList)
         {
             if (c.PlayerID == message.PlayerID)
-                color = ColorExtensions.FromUInt(color, c.PlayerColour);
+                color = ColorExtensions.ColorFromUInt(color, c.PlayerColour);
         }
         SetMessagesText(color, $"Player {message.PlayerID} defended and healed! His HP went up to {message.NewHP}!");
         SetHPTreasureText();
@@ -158,7 +161,7 @@ public class ClientGameManager : MonoBehaviour
         foreach (Client c in AllClientsList)
         {
             if (c.PlayerID == message.PlayerID)
-                color = ColorExtensions.FromUInt(color, c.PlayerColour);
+                color = ColorExtensions.ColorFromUInt(color, c.PlayerColour);
         }
         SetMessagesText(color, $"Player {message.PlayerID} entered the room.");
     }
@@ -170,7 +173,7 @@ public class ClientGameManager : MonoBehaviour
         foreach (Client c in AllClientsList)
         {
             if (c.PlayerID == message.PlayerID)
-                color = ColorExtensions.FromUInt(color, c.PlayerColour);
+                color = ColorExtensions.ColorFromUInt(color, c.PlayerColour);
         }
         SetMessagesText(color, $"Player {message.PlayerID} left the room.");
     }
@@ -182,7 +185,7 @@ public class ClientGameManager : MonoBehaviour
         foreach (Client c in AllClientsList)
         {
             if (c.PlayerID == message.PlayerID)
-                color = ColorExtensions.FromUInt(color, c.PlayerColour);
+                color = ColorExtensions.ColorFromUInt(color, c.PlayerColour);
         }
         SetMessagesText(color, $"Player {message.PlayerID} left the dungeon!");
     }
@@ -194,7 +197,7 @@ public class ClientGameManager : MonoBehaviour
         foreach (Client c in AllClientsList)
         {
             if (c.PlayerID == message.PlayerID)
-                color = ColorExtensions.FromUInt(color, c.PlayerColour);
+                color = ColorExtensions.ColorFromUInt(color, c.PlayerColour);
         }
         SetMessagesText(color, $"Player {message.PlayerID} died!");
     }
@@ -208,10 +211,11 @@ public class ClientGameManager : MonoBehaviour
             foreach (Client c in AllClientsList)
             {
                 if (c.PlayerID == message.PlayerID[i])
-                    color = ColorExtensions.FromUInt(color, c.PlayerColour);
+                    color = ColorExtensions.ColorFromUInt(color, c.PlayerColour);
             }
             SetMessagesText(color, $"Player: {message.PlayerID[i]}'s score is {message.HighScores[i]}");
         }
+        StartCoroutine(Restart());
     }
     #endregion
 
@@ -322,7 +326,7 @@ public class ClientGameManager : MonoBehaviour
 
     private void SetMessagesText(Color32 color, string text)
     {
-        string hexColor = ColorExtensions.colorToHex(color);
+        string hexColor = ColorExtensions.ColorToHex(color);
         messagesText.text += $"<color=#{hexColor}>" + text + "</color>\n";
         messagesText.rectTransform.sizeDelta = new Vector2(messagesText.rectTransform.sizeDelta.x, messagesText.rectTransform.sizeDelta.y + lineSpacing);
     }
@@ -347,7 +351,7 @@ public class ClientGameManager : MonoBehaviour
                 yield return new WaitForSeconds(1f);
             countdown = false;
         }
-
+        gameObject.GetComponent<SceneManagement>().ReloadScene();
     }
 
 }

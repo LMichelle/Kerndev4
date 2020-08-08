@@ -9,11 +9,7 @@ using KernDev.GameLogic;
 /// </summary>
 public class HostGameManager : MonoBehaviour
 {
-    public GameObject fakeMonster;
-    public GameObject treasureGO;
-    public GameObject ExitGO;
-    public GameObject gridGO;
-    public GameObject testSpawnPlayersGO;
+    public GameObject gridPrefab;
 
     [SerializeField]
     private int minMonsterSpawnAmt = 1, maxMonsterSpawnAmt = 5;
@@ -31,8 +27,7 @@ public class HostGameManager : MonoBehaviour
     private int minTreasureSpawnAmt = 10, maxTreasureSpawnAmt = 30;
     [SerializeField]
     private int healAttackDmgSubtraction = -3;
-    
-    
+
     private GridSystem grid;
     private ServerBehaviour server;
     private TurnManager turnManager = new TurnManager();
@@ -43,15 +38,15 @@ public class HostGameManager : MonoBehaviour
     private Dictionary<Player, Client> inverseActiveDictionary = new Dictionary<Player, Client>(); // inverse dictionary
     private List<Player> playerTurnList = new List<Player>(); // The list order is the turn order
     private Player currentActivePlayer;
-    private List<Monster> monsterList = new List<Monster>();
+    private List<Opponent> monsterList = new List<Opponent>();
 
-    private int randomMonsterAmount;
+
 
     private void Start()
     {
         // Instantiate grid
-        Instantiate(gridGO);
-        grid = gridGO.GetComponent<GridSystem>();
+        Instantiate(gridPrefab);
+        grid = gridPrefab.GetComponent<GridSystem>();
         grid.StartGrid();
 
         // Get clients and link them to their new player info
@@ -64,7 +59,7 @@ public class HostGameManager : MonoBehaviour
             AllClientPlayerDictionary.Add(c, player); 
             ActiveClientPlayerDictionary.Add(c, player);
             playerTurnList.Add(player);
-            player.SetStartValues(c.StartHP);
+            player.SetStartHP(c.StartHP);
             player.DamageAmount = Random.Range(minPlayerDmg, maxPlayerDmg);
         }
         UpdateInverseDictionary();
@@ -95,7 +90,6 @@ public class HostGameManager : MonoBehaviour
         foreach (Player player in ActiveClientPlayerDictionary.Values)
         {
             player.CurrentNode = grid.GetRandomNode();
-            SpawnTestPlayerObjects(player.CurrentNode.pos); //testing
             UpdateInverseDictionary();
         }
         yield break;
@@ -103,7 +97,7 @@ public class HostGameManager : MonoBehaviour
 
     private void SpawnMonsters()
     {
-        randomMonsterAmount = Random.Range(minMonsterSpawnAmt, maxMonsterSpawnAmt);
+        int randomMonsterAmount = Random.Range(minMonsterSpawnAmt, maxMonsterSpawnAmt);
         for (int i = 0; i <= randomMonsterAmount; i++)
         {
             Node monsterNode = grid.GetRandomNode();
@@ -116,14 +110,13 @@ public class HostGameManager : MonoBehaviour
             }
             monsterNode.Monster = true; 
             // Make a monster
-            Monster monster = new Monster {
+            Opponent monster = new Opponent {
                 DamageAmount = Random.Range(minMonsterDmg, maxMonsterDmg),
                 CurrentNode = monsterNode
             };
             
-            monster.SetStartValues(Random.Range(minMonsterHP, maxMonsterHP));
+            monster.SetStartHP(Random.Range(minMonsterHP, maxMonsterHP));
             monsterList.Add(monster);
-            Instantiate(fakeMonster, monster.CurrentNode.pos, Quaternion.identity); // testing
         }
     }
 
@@ -139,7 +132,6 @@ public class HostGameManager : MonoBehaviour
                     treasureNode = grid.GetRandomNode();
             }
             treasureNode.Treasure = true;
-            Instantiate(treasureGO, treasureNode.pos, Quaternion.identity); // testing
         }
     }
 
@@ -147,7 +139,6 @@ public class HostGameManager : MonoBehaviour
     {
         Node exitNode = grid.GetRandomNode();
         exitNode.DungeonExit = true;
-        Instantiate(ExitGO, exitNode.pos, Quaternion.identity);
     }
     #endregion
 
@@ -440,8 +431,8 @@ public class HostGameManager : MonoBehaviour
         var attackRequestMessage = (messageConnection.messageHeader as AttackRequestMessage);
         // get the current active player and the monster in that node
         Node monsterNode = grid.GetSpecificNodeInstance(currentActivePlayer.CurrentNode);
-        Monster monster = new Monster();
-        foreach(Monster m in monsterList)
+        Opponent monster = new Opponent();
+        foreach(Opponent m in monsterList)
         {
             if (m.CurrentNode == monsterNode)
                 monster = m;
@@ -502,8 +493,8 @@ public class HostGameManager : MonoBehaviour
     {
         // Get the monster
         Node monsterNode = grid.GetSpecificNodeInstance(currentActivePlayer.CurrentNode);
-        Monster monster = new Monster();
-        foreach (Monster m in monsterList)
+        Opponent monster = new Opponent();
+        foreach (Opponent m in monsterList)
         {
             if (m.CurrentNode == monsterNode)
                 monster = m;
@@ -609,11 +600,6 @@ public class HostGameManager : MonoBehaviour
         }
     }
 
-    // Testing
-    private void SpawnTestPlayerObjects(Vector3 pos)
-    {
-        Instantiate(testSpawnPlayersGO, pos, testSpawnPlayersGO.transform.rotation);
-    }
 
     
 }

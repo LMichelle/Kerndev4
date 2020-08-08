@@ -342,22 +342,20 @@ namespace KernDev.NetworkBehaviour
 
         private void HandlePlayerLeft(MessageConnection message)
         {
+            Client removeClient = null;
             foreach (Client c in clientList)
             {
                 if (c.Connection == message.connection)
                 {
-                    clientList.Remove(c);
+                    removeClient = c;
                     break;
                 }
             }
+            if (removeClient !=null)
+                clientList.Remove(removeClient);
+            
             foreach (Client c in clientList)
-            {
                 SendMessage(message.messageHeader, c.Connection);
-            }
-            foreach (NetworkConnection c in connections)
-            {
-
-            }
         }
 
         private void HandleNone(MessageConnection message)

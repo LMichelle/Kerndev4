@@ -74,7 +74,6 @@ namespace Assets.Code
         {
             yield return StartCoroutine(DatabaseManager.GetHTTP("ServerLogin.php?id=" + DatabaseManager.serverID + "&Password=" + DatabaseManager.serverPassword));
             DatabaseManager.sessionID = DatabaseManager.response;
-            Debug.Log(DatabaseManager.sessionID);
         }
 
         /// <summary>
@@ -104,7 +103,10 @@ namespace Assets.Code
             }
         }
 
-        public void HostGame() // when hosting the game, add both a server and client.
+        /// <summary>
+        /// Adds both a Serverbehaviour and a Clientbehaviour.
+        /// </summary>
+        public void HostGame() 
         {  
             if (ipInputField.text != "")
             {
@@ -177,8 +179,8 @@ namespace Assets.Code
             // Get colour and convert
             uint playerColour = message.PlayerColour;
             Color32 color32 = new Color32();
-            color32 = ColorExtensions.FromUInt(color32, playerColour);
-            string hexColor = ColorExtensions.colorToHex(color32);
+            color32 = ColorExtensions.ColorFromUInt(color32, playerColour);
+            string hexColor = ColorExtensions.ColorToHex(color32);
 
             // Display the message
             SetMessagesText($"<color=#{hexColor}>Player {message.PlayerID}, {message.PlayerName} has joined the game!</color>");
@@ -198,8 +200,8 @@ namespace Assets.Code
             var message = (messageConnection.messageHeader as WelcomeMessage);
             uint playerColour = message.PlayerColour;
             Color32 color32 = new Color32();
-            color32 = ColorExtensions.FromUInt(color32, playerColour);
-            string hexColor = ColorExtensions.colorToHex(color32);
+            color32 = ColorExtensions.ColorFromUInt(color32, playerColour);
+            string hexColor = ColorExtensions.ColorToHex(color32);
             SetMessagesText($"<color=#{hexColor}> Welcome! Your player ID is {message.PlayerID}.</color>");
             bool host = false;
             if (message.PlayerID == 0)
@@ -224,15 +226,22 @@ namespace Assets.Code
         {
             var message = (messageConnection.messageHeader as PlayerLeftMessage);
             SetMessagesText($"Player {message.PlayerLeftID} has left the room.");
-            
+
             // Remove the client that left from the All Clients List
+            Client removeClient = null;
             foreach (Client c in AllClientsList)
             {
                 if (c.PlayerID == message.PlayerLeftID)
                 {
-                    AllClientsList.Remove(c);
+                    removeClient = null;
+                    break;
                 }
             }
+            if(removeClient != null)
+            {
+                AllClientsList.Remove(removeClient);
+            }
+                
         }
 
         public void ShowStartGame(MessageConnection messageConnection)
@@ -333,15 +342,16 @@ namespace Assets.Code
             SetMessagesText("The host terminated the room.");
         }
 
-        private void StartGame()
+        private void StartGame() 
         {
             if (thisClient.Host)
             { 
                 gameObject.GetComponent<HostGameManager>().enabled = true;
             }
             gameObject.GetComponent<ClientGameManager>().enabled = true;
-            gameObject.GetComponent<ClientGameManager>().ThisClient = thisClient;
-            gameObject.GetComponent<ClientGameManager>().AllClientsList = AllClientsList;
+            gameObject.GetComponent<ClientGameManager>().StartGame(thisClient, AllClientsList);
+            SetOutputText(gameObject.GetComponent<ClientGameManager>().messagesText);
+            
         }
 
         /// <summary>

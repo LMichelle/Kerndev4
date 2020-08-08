@@ -4,9 +4,17 @@ namespace KernDev.GameLogic
 {
     public class TurnManager
     {
-        public int Turn { get; set; } // Start at player amount, next turn will do modulo and turn will be zero the first time.
+        /// <summary>
+        /// Start at player amount, next turn will do modulo and turn will be zero the first time.
+        /// </summary>
+        public int Turn { get; set; } 
         public int FormerAmountOfPlayers { get; set; }
 
+        /// <summary>
+        /// Generates the number of the next turn.
+        /// </summary>
+        /// <param name="amountOfPlayers"> Amount of players that need a turn. </param>
+        /// <returns></returns>
         public int NextTurn(int amountOfPlayers)
         {
             if (FormerAmountOfPlayers == amountOfPlayers)
