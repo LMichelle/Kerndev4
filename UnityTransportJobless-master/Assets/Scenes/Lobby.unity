@@ -2202,7 +2202,7 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 713337504}
+      - m_Target: {fileID: 713337507}
         m_MethodName: SendStartGame
         m_Mode: 1
         m_Arguments:
@@ -3251,7 +3251,7 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 713337504}
+      - m_Target: {fileID: 713337507}
         m_MethodName: SendTerminateRoom
         m_Mode: 1
         m_Arguments:
@@ -3896,7 +3896,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!224 &676598364
 RectTransform:
   m_ObjectHideFlags: 0
@@ -4486,8 +4486,6 @@ MonoBehaviour:
   lineSpacing: 35
   hostGameButton: {fileID: 699653709}
   joinGameButton: {fileID: 701888861}
-  minPlayerHP: 30
-  maxPlayerHP: 50
 --- !u!114 &713337505
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -4528,8 +4526,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   gridPrefab: {fileID: 5574241064367834872, guid: 19bda411bc742e84192906889c95d1f6,
     type: 3}
-  minMonsterSpawnAmt: 4
-  maxMonsterSpawnAmt: 8
+  minMonsterSpawnAmt: 1
+  maxMonsterSpawnAmt: 2
   minMonsterHP: 10
   maxMonsterHP: 15
   minMonsterDmg: 2
@@ -4542,8 +4540,10 @@ MonoBehaviour:
   minTreasureContainingAmt: 200
   maxTreasureContainingAmt: 300
   minTreasureSpawnAmt: 2
-  maxTreasureSpawnAmt: 3
+  maxTreasureSpawnAmt: 5
   healAttackDmgSubtraction: -3
+  minPlayerHP: 30
+  maxPlayerHP: 50
 --- !u!114 &713337508
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -4557,8 +4557,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   lineSpacing: 35
+  nameInputField: {fileID: 376412614}
   GameUI: {fileID: 656729489}
   messagesText: {fileID: 1590085987}
+  MessagesText: {fileID: 0}
   HPTreasureText: {fileID: 248652625}
   claimTreasureButton: {fileID: 130584888}
   attackButton: {fileID: 1157794569}
@@ -10041,8 +10043,8 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 713337504}
-        m_MethodName: SendLeaveRoom
+      - m_Target: {fileID: 713337508}
+        m_MethodName: LeaveRoom
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}

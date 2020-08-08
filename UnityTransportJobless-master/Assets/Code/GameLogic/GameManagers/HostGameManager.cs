@@ -27,14 +27,16 @@ public class HostGameManager : MonoBehaviour
     private int minTreasureSpawnAmt = 10, maxTreasureSpawnAmt = 30;
     [SerializeField]
     private int healAttackDmgSubtraction = -3;
+    [SerializeField]
+    private int minPlayerHP = 30, maxPlayerHP = 50;
 
-    
+
 
     private GridSystem grid;
     private ServerBehaviour server;
     private TurnManager turnManager = new TurnManager();
 
-    private List<Client> clientList; // List of all clients
+    public List<Client> clientList; // List of all clients
     private Dictionary<Client, Player> AllClientPlayerDictionary = new Dictionary<Client, Player>(); // All clients and their player info
     private Dictionary<Client, Player> ActiveClientPlayerDictionary = new Dictionary<Client, Player>(); // all clients/players still in the turns
     private Dictionary<Player, Client> inverseActiveDictionary = new Dictionary<Player, Client>(); // inverse dictionary
@@ -42,7 +44,11 @@ public class HostGameManager : MonoBehaviour
     private Player currentActivePlayer;
     private List<Opponent> monsterList = new List<Opponent>();
 
-
+    private void Start()
+    {
+        server = GameObject.FindGameObjectWithTag("Server").GetComponent<ServerBehaviour>();
+        server.HostGameManager = this;
+    }
 
     public void StartGame()
     {
@@ -52,9 +58,7 @@ public class HostGameManager : MonoBehaviour
         grid.StartGrid();
 
         // Get clients and link them to their new player info
-        server = GameObject.FindGameObjectWithTag("Server").GetComponent<ServerBehaviour>();
-        server.HostGameManager = this;
-        clientList = server.clientList;
+        clientList = server.ClientList;
         foreach(Client c in clientList)
         {
             Player player = new Player();
@@ -168,7 +172,25 @@ public class HostGameManager : MonoBehaviour
     }
 
     #region Send Game Messages
-    
+    public void SendStartGame()
+    {
+        var startGameMessage = new StartGameMessage {
+            StartHP = (ushort)Random.Range(minPlayerHP, maxPlayerHP)
+        };
+        foreach(Client c in server.ClientList)
+            server.SendMessage(startGameMessage, c.Connection);
+    }
+
+    public void SendTerminateRoom()
+    {
+        if (server != null)
+        {
+            server.Disconnect();
+            GameObject clientBehaviour = GameObject.FindGameObjectWithTag("Client");
+            Destroy(clientBehaviour, 2f);
+            Destroy(server, 3f);
+        }
+    }
 
     /// <summary>
     /// Send whose turn it is to all clients.

@@ -215,7 +215,7 @@ namespace KernDev.NetworkBehaviour
                     {
                         Debug.Log("Disconnected from server");
                         connection = default;
-                        LobbyManager.ShowHostTerminatedRoom();
+                        ClientGameManager.ShowHostTerminatedRoom();
                     }
                 }
 
@@ -247,15 +247,23 @@ namespace KernDev.NetworkBehaviour
 
         private void AddLobbyEventListeners()
         {
-            ClientCallbacks[(int)MessageHeader.MessageType.NewPlayer].AddListener(LobbyManager.ShowNewPlayerMessage);
-            ClientCallbacks[(int)MessageHeader.MessageType.Welcome].AddListener(LobbyManager.ShowWelcomeMessage);
-            ClientCallbacks[(int)MessageHeader.MessageType.PlayerLeft].AddListener(LobbyManager.ShowPlayerLeftMessage);
-            ClientCallbacks[(int)MessageHeader.MessageType.RequestDenied].AddListener(LobbyManager.ShowRequestDeniedMessage);
-            ClientCallbacks[(int)MessageHeader.MessageType.StartGame].AddListener(LobbyManager.ShowStartGame);
+            //ClientCallbacks[(int)MessageHeader.MessageType.NewPlayer].AddListener(LobbyManager.ShowNewPlayerMessage);
+            //ClientCallbacks[(int)MessageHeader.MessageType.Welcome].AddListener(LobbyManager.ShowWelcomeMessage);
+            
+            //ClientCallbacks[(int)MessageHeader.MessageType.PlayerLeft].AddListener(LobbyManager.ShowPlayerLeftMessage);
+            //ClientCallbacks[(int)MessageHeader.MessageType.RequestDenied].AddListener(LobbyManager.ShowRequestDeniedMessage);
+            //ClientCallbacks[(int)MessageHeader.MessageType.StartGame].AddListener(LobbyManager.ShowStartGame);
         }
 
         public void AddGameEventListeners()
         {
+            Debug.Log("Added game event listeners");
+            ClientCallbacks[(int)MessageHeader.MessageType.Welcome].AddListener(ClientGameManager.ShowWelcomeMessage);
+            ClientCallbacks[(int)MessageHeader.MessageType.NewPlayer].AddListener(ClientGameManager.ShowNewPlayerMessage);
+            ClientCallbacks[(int)MessageHeader.MessageType.RequestDenied].AddListener(ClientGameManager.ShowRequestDeniedMessage);
+            ClientCallbacks[(int)MessageHeader.MessageType.PlayerLeft].AddListener(ClientGameManager.ShowPlayerLeftMessage);
+            ClientCallbacks[(int)MessageHeader.MessageType.StartGame].AddListener(ClientGameManager.ShowStartGame);
+
             ClientCallbacks[(int)MessageHeader.MessageType.PlayerTurn].AddListener(ClientGameManager.ShowPlayerTurnMessage);
             ClientCallbacks[(int)MessageHeader.MessageType.RoomInfo].AddListener(ClientGameManager.ShowRoomInfoMessage);
             ClientCallbacks[(int)MessageHeader.MessageType.HitMonster].AddListener(ClientGameManager.ShowHitMonsterMessage);

@@ -17,7 +17,14 @@ namespace KernDev.NetworkBehaviour
 
         private Queue<MessageConnection> messagesQueue;
 
-        public List<Client> clientList = new List<Client>();
+        private List<Client> clientList = new List<Client>();
+        public List<Client> ClientList {
+            get { return clientList; }
+            set {
+                clientList = value;
+                hostGameManager.clientList = clientList; 
+            } 
+        }
         public int deniedMessageID = 0;
 
         private bool doneInitializing = false;
@@ -88,9 +95,11 @@ namespace KernDev.NetworkBehaviour
                 {
                     if (!connections[i].IsCreated)
                     {
+
+
                         connections.RemoveAtSwapBack(i);
                         --i;
-                        // send who left
+      
                     }
                 }
 
@@ -99,7 +108,7 @@ namespace KernDev.NetworkBehaviour
                 while ((connection = networkDriver.Accept()) != default)
                 {
                     // We can only accept 4 connections
-                    if (clientList.Count >= 4)
+                    if (ClientList.Count >= 4)
                     {
                         // Send Request Denied Message
                         SendRequestDeniedMessage(connection);
@@ -116,7 +125,7 @@ namespace KernDev.NetworkBehaviour
                             host = true;
                         Client newClient = new Client(connection.InternalId, "", connection, host);
                         newClient.AssignRandomColor();
-                        clientList.Add(newClient);
+                        ClientList.Add(newClient);
                         SendWelcomeMessage(newClient);
                     }
 
@@ -231,6 +240,24 @@ namespace KernDev.NetworkBehaviour
                         else if (cmd == NetworkEvent.Type.Disconnect)
                         {
                             Debug.Log("Client disconnected");
+                            // send who is leaving
+                            var playerLeftMessage = new PlayerLeftMessage {
+                                PlayerLeftID = connections[i].InternalId
+                            };
+                            Client removeClient = null;
+                            foreach (Client c in clientList)
+                            {
+                                if (c.PlayerID == connections[i].InternalId)
+                                    removeClient = c;
+                            }
+                            clientList.Remove(removeClient);
+
+                            foreach (Client c in clientList)
+                            {
+                                if (c.PlayerID != connections[i].InternalId)
+                                    SendMessage(playerLeftMessage, c.Connection);
+                            }
+                            
                             connections[i] = default;
                         }
                     }
@@ -277,7 +304,7 @@ namespace KernDev.NetworkBehaviour
         private void HandleSetName(MessageConnection message)
         {
             // first we want to set the name to the right client, and send him the info of the other players
-            foreach (Client c in clientList)
+            foreach (Client c in ClientList)
             {
                 if (c.Connection == message.connection) // the client who sent in the name
                 {
@@ -287,7 +314,7 @@ namespace KernDev.NetworkBehaviour
             }
 
             // then we want to send the info of the new player to the others. This can only be done after we know for sure the name has registered.
-            foreach (Client c in clientList)
+            foreach (Client c in ClientList)
             {
                 if (c.Connection == message.connection) // this is the new player, we don't want to send him anthing
                     NewPlayerMessageToAll(c);
@@ -310,7 +337,7 @@ namespace KernDev.NetworkBehaviour
                 PlayerName = client.PlayerName
             };
 
-            foreach (Client c in clientList)
+            foreach (Client c in ClientList)
             {
                 if (c == client)
                     continue;
@@ -326,7 +353,7 @@ namespace KernDev.NetworkBehaviour
         private void NewPlayerMessageToNew(Client client)
         {
             // make a message about each of the existing players for the new player
-            foreach (Client c in clientList)
+            foreach (Client c in ClientList)
             {
                 if (c == client)
                     continue;
@@ -343,7 +370,7 @@ namespace KernDev.NetworkBehaviour
         private void HandlePlayerLeft(MessageConnection message)
         {
             Client removeClient = null;
-            foreach (Client c in clientList)
+            foreach (Client c in ClientList)
             {
                 if (c.Connection == message.connection)
                 {
@@ -352,15 +379,15 @@ namespace KernDev.NetworkBehaviour
                 }
             }
             if (removeClient !=null)
-                clientList.Remove(removeClient);
+                ClientList.Remove(removeClient);
             
-            foreach (Client c in clientList)
+            foreach (Client c in ClientList)
                 SendMessage(message.messageHeader, c.Connection);
         }
 
         private void HandleNone(MessageConnection message)
         {
-            foreach (Client c in clientList)
+            foreach (Client c in ClientList)
             {
                 SendMessage(message.messageHeader, c.Connection);
             }
@@ -368,7 +395,7 @@ namespace KernDev.NetworkBehaviour
 
         private void HandleStartGame(MessageConnection message)
         {
-            foreach (Client c in clientList)
+            foreach (Client c in ClientList)
             {
                 SendMessage(message.messageHeader, c.Connection);
                 c.StartHP = (message.messageHeader as StartGameMessage).StartHP;
@@ -396,7 +423,7 @@ namespace KernDev.NetworkBehaviour
 
         public void Disconnect()
         {
-            foreach (Client c in clientList)
+            foreach (Client c in ClientList)
             {
                 networkDriver.Disconnect(c.Connection);
             }

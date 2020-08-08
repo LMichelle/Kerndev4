@@ -4,6 +4,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using KernDev.NetworkBehaviour;
 using KernDev.GameLogic;
+using Assets.Code;
 
 /// <summary>
 /// Script on all clients that manages the clients UI & Requests.
@@ -13,14 +14,20 @@ public class ClientGameManager : MonoBehaviour
     [SerializeField]
     private float lineSpacing = 35;
     [SerializeField]
+    private InputField nameInputField;
+    [SerializeField]
     private GameObject GameUI;
-    public Text messagesText;
+    [SerializeField]
+    private Text messagesText;
+    [HideInInspector]
+    public Text MessagesText;
     [SerializeField]
     private Text HPTreasureText;
     [SerializeField]
     private Button claimTreasureButton, attackButton, defendButton, exitDungeonButton;
     [SerializeField]
     private Button northButton, eastButton, southButton, westButton;
+
 
     
     [HideInInspector]
@@ -31,14 +38,21 @@ public class ClientGameManager : MonoBehaviour
 
     private ClientBehaviour clientBehaviour;
 
-    public void StartGame(Client thisClient, List<Client> allClients)
+    private void Start()
     {
-        ThisClient = thisClient;
-        AllClientsList = allClients;
-        GameUI.SetActive(true);
         clientBehaviour = GameObject.FindGameObjectWithTag("Client").GetComponent<ClientBehaviour>();
         clientBehaviour.ClientGameManager = this;
-        messagesText.text = "";
+        AllClientsList = new List<Client>();
+    }
+
+    public void GameStart()
+    {
+        //ThisClient = thisClient;
+        //AllClientsList = allClients;
+        GameUI.SetActive(true);
+        SetOutputText(messagesText);
+        
+        MessagesText.text = "";
         DisableAllButtons();
 
         ThisPlayer = new Player();
@@ -49,6 +63,85 @@ public class ClientGameManager : MonoBehaviour
     }
 
     #region Show Messages
+    public void ShowWelcomeMessage(MessageConnection messageConnection)
+    {
+        Debug.Log("Show welcome message");
+        var message = (messageConnection.messageHeader as WelcomeMessage);
+        uint playerColour = message.PlayerColour;
+        Color32 color32 = new Color32();
+        color32 = ColorExtensions.ColorFromUInt(color32, playerColour);
+        //string hexColor = ColorExtensions.ColorToHex(color32);
+        SetMessagesText(color32, $"Welcome! Your player ID is {message.PlayerID}.");
+        bool host = false;
+        if (message.PlayerID == 0)
+            host = true;
+
+        // Have this clients info ready for the gamemanager.
+        ThisClient = new Client(message.PlayerID, "", messageConnection.connection, host);
+        ThisClient.PlayerColour = message.PlayerColour;
+        AllClientsList.Add(ThisClient);
+
+        // Remove this later
+        gameObject.GetComponent<LobbyManager>().thisClient = ThisClient;
+
+        SendSetNameMessage();
+    }
+
+    public void ShowNewPlayerMessage(MessageConnection messageConnection)
+    {
+        var message = (messageConnection.messageHeader as NewPlayerMessage);
+
+        // Get colour and convert
+        uint playerColour = message.PlayerColour;
+        Color32 color32 = new Color32();
+        color32 = ColorExtensions.ColorFromUInt(color32, playerColour);
+
+        // Display the message
+        SetMessagesText(color32, $"Player {message.PlayerID}, {message.PlayerName} has joined the game!");
+
+        // Add to the clientList
+        Client otherClient = new Client(message.PlayerID, message.PlayerName, default, false);
+        otherClient.PlayerColour = message.PlayerColour;
+        AllClientsList.Add(otherClient);
+    }
+
+    public void ShowRequestDeniedMessage(MessageConnection messageConnection)
+    {
+        var message = (messageConnection.messageHeader as RequestDeniedMessage);
+        uint deniedID = message.DeniedMessageID;
+        SetMessagesText(Color.white, $"Your request has been denied. Denied Message ID: {deniedID}");
+    }
+
+    public void ShowPlayerLeftMessage(MessageConnection messageConnection)
+    {
+        var message = (messageConnection.messageHeader as PlayerLeftMessage);
+        SetMessagesText(Color.white, $"Player {message.PlayerLeftID} has left the room.");
+
+        // Remove the client that left from the All Clients List
+        Client removeClient = null;
+        foreach (Client c in AllClientsList)
+        {
+            if (c.PlayerID == message.PlayerLeftID)
+            {
+                removeClient = null;
+                break;
+            }
+        }
+        if (removeClient != null)
+        {
+            AllClientsList.Remove(removeClient);
+        }
+
+    }
+
+    public void ShowStartGame(MessageConnection messageConnection)
+    {
+        var message = (messageConnection.messageHeader as StartGameMessage);
+        ThisClient.StartHP = message.StartHP;
+        SetMessagesText(Color.white, $"The Game is starting in");
+        StartCoroutine(StartGameCountDown());
+    }
+
     public void ShowPlayerTurnMessage(MessageConnection messageConnection)
     {
         var message = (messageConnection.messageHeader as PlayerTurnMessage);
@@ -218,9 +311,25 @@ public class ClientGameManager : MonoBehaviour
         }
         StartCoroutine(Restart());
     }
+
+    public void ShowHostTerminatedRoom()
+    {
+        SetMessagesText(Color.white, "The host terminated the room.");
+    }
     #endregion
 
     #region SendRequests
+    public void SendSetNameMessage()
+    {
+        string name = nameInputField.text;
+        var setNameMessage = new SetNameMessage {
+            Name = name
+        };
+        clientBehaviour.SendMessage(setNameMessage);
+
+        ThisClient.PlayerName = name;
+    }
+
     public void SendMoveRequest(string directionString)
     {
         // The button has been clicked, so disable them.
@@ -288,6 +397,7 @@ public class ClientGameManager : MonoBehaviour
     }
     #endregion
 
+    #region UI altering functions
     private void SetActiveDirectionButtons(Wall openDirections)
     {
         // Enable the correct buttons
@@ -325,12 +435,18 @@ public class ClientGameManager : MonoBehaviour
             $"Gold: {ThisPlayer.TreasureAmount}";
     }
 
+    public void SetOutputText(Text text)
+    {
+        MessagesText = text;
+    }
+
     private void SetMessagesText(Color32 color, string text)
     {
         string hexColor = ColorExtensions.ColorToHex(color);
-        messagesText.text += $"<color=#{hexColor}>" + text + "</color>\n";
-        messagesText.rectTransform.sizeDelta = new Vector2(messagesText.rectTransform.sizeDelta.x, messagesText.rectTransform.sizeDelta.y + lineSpacing);
+        MessagesText.text += $"<color=#{hexColor}>" + text + "</color>\n";
+        MessagesText.rectTransform.sizeDelta = new Vector2(MessagesText.rectTransform.sizeDelta.x, MessagesText.rectTransform.sizeDelta.y + lineSpacing);
     }
+    #endregion
 
     public IEnumerator ShowConnectionDisconnected()
     {
@@ -340,6 +456,32 @@ public class ClientGameManager : MonoBehaviour
         clientBehaviour.Disconnect();
         Destroy(clientBehaviour.gameObject);
         gameObject.GetComponent<SceneManagement>().ReloadScene();
+    }
+
+    public IEnumerator StartGameCountDown()
+    {
+        bool countdown = true;
+        while (countdown)
+        {
+            for (int i = 3; i > 0; i--)
+            {
+                SetMessagesText(Color.white, $"{i}");
+                yield return new WaitForSeconds(1f);
+            }
+            countdown = false;
+            StartGame();
+        }
+    }
+
+    private void StartGame()
+    {
+        if (ThisClient.Host)
+        {
+            gameObject.GetComponent<HostGameManager>().StartGame();
+        }
+
+        GameStart();
+        SetOutputText(messagesText);
     }
 
     private IEnumerator Restart()
@@ -353,6 +495,12 @@ public class ClientGameManager : MonoBehaviour
             countdown = false;
         }
         gameObject.GetComponent<SceneManagement>().ReloadScene();
+    }
+
+    public void LeaveRoom()
+    {
+        clientBehaviour.Disconnect();
+        Destroy(clientBehaviour.gameObject, 3f);
     }
 
 }
