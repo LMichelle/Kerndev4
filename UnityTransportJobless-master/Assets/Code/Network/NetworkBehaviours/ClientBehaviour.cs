@@ -24,7 +24,7 @@ namespace KernDev.NetworkBehaviour
             get { return lobbyManager; }
             set {
                 lobbyManager = value;
-                AddLobbyEventListeners(); }
+                }
         }
 
         private ClientGameManager clientGameManager;
@@ -32,7 +32,6 @@ namespace KernDev.NetworkBehaviour
             get { return clientGameManager; }
             set {
                 clientGameManager = value;
-                AddGameEventListeners();
             }
         }
 
@@ -57,6 +56,7 @@ namespace KernDev.NetworkBehaviour
             }
 
             LobbyManager = GameObject.FindGameObjectWithTag("GameController").GetComponent<LobbyManager>();
+            AddProtocolEventListeners();
             doneInitializing = true;
         }
 
@@ -245,25 +245,16 @@ namespace KernDev.NetworkBehaviour
 
         }
 
-        private void AddLobbyEventListeners()
+        public void AddProtocolEventListeners()
         {
-            //ClientCallbacks[(int)MessageHeader.MessageType.NewPlayer].AddListener(LobbyManager.ShowNewPlayerMessage);
-            //ClientCallbacks[(int)MessageHeader.MessageType.Welcome].AddListener(LobbyManager.ShowWelcomeMessage);
-            
-            //ClientCallbacks[(int)MessageHeader.MessageType.PlayerLeft].AddListener(LobbyManager.ShowPlayerLeftMessage);
-            //ClientCallbacks[(int)MessageHeader.MessageType.RequestDenied].AddListener(LobbyManager.ShowRequestDeniedMessage);
-            //ClientCallbacks[(int)MessageHeader.MessageType.StartGame].AddListener(LobbyManager.ShowStartGame);
-        }
-
-        public void AddGameEventListeners()
-        {
-            Debug.Log("Added game event listeners");
+            // Lobby Protocol
             ClientCallbacks[(int)MessageHeader.MessageType.Welcome].AddListener(ClientGameManager.ShowWelcomeMessage);
             ClientCallbacks[(int)MessageHeader.MessageType.NewPlayer].AddListener(ClientGameManager.ShowNewPlayerMessage);
             ClientCallbacks[(int)MessageHeader.MessageType.RequestDenied].AddListener(ClientGameManager.ShowRequestDeniedMessage);
             ClientCallbacks[(int)MessageHeader.MessageType.PlayerLeft].AddListener(ClientGameManager.ShowPlayerLeftMessage);
             ClientCallbacks[(int)MessageHeader.MessageType.StartGame].AddListener(ClientGameManager.ShowStartGame);
 
+            // Game Protocol
             ClientCallbacks[(int)MessageHeader.MessageType.PlayerTurn].AddListener(ClientGameManager.ShowPlayerTurnMessage);
             ClientCallbacks[(int)MessageHeader.MessageType.RoomInfo].AddListener(ClientGameManager.ShowRoomInfoMessage);
             ClientCallbacks[(int)MessageHeader.MessageType.HitMonster].AddListener(ClientGameManager.ShowHitMonsterMessage);
@@ -275,7 +266,6 @@ namespace KernDev.NetworkBehaviour
             ClientCallbacks[(int)MessageHeader.MessageType.PlayerLeftDungeon].AddListener(ClientGameManager.ShowPlayerLeftDungeonMessage);
             ClientCallbacks[(int)MessageHeader.MessageType.EndGame].AddListener(ClientGameManager.ShowEndGameMessage);
             ClientCallbacks[(int)MessageHeader.MessageType.PlayerDies].AddListener(ClientGameManager.ShowPlayerDiesMessage);
-
         }
 
         public void Disconnect()

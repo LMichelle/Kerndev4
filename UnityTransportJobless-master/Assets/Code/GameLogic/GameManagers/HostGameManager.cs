@@ -174,11 +174,16 @@ public class HostGameManager : MonoBehaviour
     #region Send Game Messages
     public void SendStartGame()
     {
+        int startHP = Random.Range(minPlayerHP, maxPlayerHP);
         var startGameMessage = new StartGameMessage {
-            StartHP = (ushort)Random.Range(minPlayerHP, maxPlayerHP)
+            StartHP = (ushort)startHP
         };
         foreach(Client c in server.ClientList)
+        {
             server.SendMessage(startGameMessage, c.Connection);
+            c.StartHP = startHP;
+        }
+            
     }
 
     public void SendTerminateRoom()

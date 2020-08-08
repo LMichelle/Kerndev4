@@ -9,6 +9,7 @@ namespace Assets.Code
 {
     public class LobbyManager : MonoBehaviour
     {
+        [SerializeField]
         private Text outputMessagesText;
         public InputField usernameInputField;
         public InputField passwordInputField;
@@ -21,8 +22,6 @@ namespace Assets.Code
         [SerializeField]
         private Text outputLogsText;
 
-        [SerializeField]
-        private int lineSpacing = 35;
 
         [SerializeField]
         private Button hostGameButton, joinGameButton;
@@ -126,19 +125,20 @@ namespace Assets.Code
             DontDestroyOnLoad(server);
             outputLogsText.text += "The room is created.";
 
-            // Add the Client Behaviour
-            GameObject client = new GameObject();
-            clientBehaviour = client.AddComponent<ClientBehaviour>();
-            clientBehaviour.ClientStart(ipInputField.text);
-            client.name = "Client";
-            client.tag = "Client";
-
             // Enable the HostGameManager
             gameObject.GetComponent<HostGameManager>().enabled = true;
-            gameObject.GetComponent<ClientGameManager>().SetOutputText(hostMessagesText);
 
-            //Enable the client game manager
+            // Add the Client Behaviour
+            GameObject client = new GameObject();
+            clientBehaviour = client.AddComponent<ClientBehaviour>();      
+            client.name = "Client";
+            client.tag = "Client";
             gameObject.GetComponent<ClientGameManager>().enabled = true;
+            gameObject.GetComponent<ClientGameManager>().SetOutputText(hostMessagesText);
+            gameObject.GetComponent<ClientGameManager>().StartClientGameManager();
+
+            clientBehaviour.ClientStart(ipInputField.text);
+            
 
             // Update the UI to go to the Lobby
             lobbyUIGO.SetActive(true);
@@ -164,12 +164,16 @@ namespace Assets.Code
             
             // Add the Client Behaviour
             GameObject client = new GameObject();
-            clientBehaviour = client.AddComponent<ClientBehaviour>();
+            clientBehaviour = client.AddComponent<ClientBehaviour>(); 
+            client.tag = "Client";
+            client.name = "Client";
+
             gameObject.GetComponent<ClientGameManager>().enabled = true;
             gameObject.GetComponent<ClientGameManager>().SetOutputText(joinMessagesText);
+            gameObject.GetComponent<ClientGameManager>().StartClientGameManager();
+            
             clientBehaviour.ClientStart(ipInputField.text);
-            client.name = "Client";
-            client.tag = "Client";
+            
             outputLogsText.text += "Joined the game.";
             
             // Update the UI
@@ -179,20 +183,6 @@ namespace Assets.Code
             joinOptionsGO.SetActive(true);
         }
 
-        #region Send Messages
-
-        public void SendLeaveRoom()
-        {
-            //if (thisClient != null)
-            //{
-            //    var playerLeftMessage = new PlayerLeftMessage {
-            //        PlayerLeftID = thisClient.PlayerID
-            //    };
-            //    clientBehaviour.SendMessage(playerLeftMessage);
-            //}
-            clientBehaviour.Disconnect();
-            Destroy(clientBehaviour.gameObject, 3f);
-        }
 
         /// <summary>
         /// To not have the server disconnect after inactivity, send a 'none' message every 10 seconds.
@@ -211,8 +201,6 @@ namespace Assets.Code
                 yield return new WaitForSeconds(10f);
             }
         }
-        #endregion
-
 
         /// <summary>
         /// Used to determine the client's messages text GO or the host's.
@@ -221,12 +209,6 @@ namespace Assets.Code
         public void SetOutputText(Text text)
         {
             outputMessagesText = text;
-        }
-
-        private void SetMessagesText(string text)
-        {
-            outputMessagesText.text += text + "\n";
-            outputMessagesText.rectTransform.sizeDelta = new Vector2(outputMessagesText.rectTransform.sizeDelta.x, outputMessagesText.rectTransform.sizeDelta.y + lineSpacing);
         }
 
         public bool ValidateIPv4(string ipString)

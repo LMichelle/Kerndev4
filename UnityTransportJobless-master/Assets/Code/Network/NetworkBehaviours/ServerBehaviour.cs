@@ -319,8 +319,6 @@ namespace KernDev.NetworkBehaviour
                 if (c.Connection == message.connection) // this is the new player, we don't want to send him anthing
                     NewPlayerMessageToAll(c);
             }
-
-
         }
 
 

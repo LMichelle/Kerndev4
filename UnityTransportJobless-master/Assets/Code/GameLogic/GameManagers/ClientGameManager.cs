@@ -38,17 +38,15 @@ public class ClientGameManager : MonoBehaviour
 
     private ClientBehaviour clientBehaviour;
 
-    private void Start()
+    public void StartClientGameManager()
     {
-        clientBehaviour = GameObject.FindGameObjectWithTag("Client").GetComponent<ClientBehaviour>();
-        clientBehaviour.ClientGameManager = this;
         AllClientsList = new List<Client>();
+        clientBehaviour = GameObject.FindGameObjectWithTag("Client").GetComponent<ClientBehaviour>();
+        clientBehaviour.ClientGameManager = this;  
     }
 
     public void GameStart()
     {
-        //ThisClient = thisClient;
-        //AllClientsList = allClients;
         GameUI.SetActive(true);
         SetOutputText(messagesText);
         
@@ -65,12 +63,10 @@ public class ClientGameManager : MonoBehaviour
     #region Show Messages
     public void ShowWelcomeMessage(MessageConnection messageConnection)
     {
-        Debug.Log("Show welcome message");
         var message = (messageConnection.messageHeader as WelcomeMessage);
         uint playerColour = message.PlayerColour;
         Color32 color32 = new Color32();
         color32 = ColorExtensions.ColorFromUInt(color32, playerColour);
-        //string hexColor = ColorExtensions.ColorToHex(color32);
         SetMessagesText(color32, $"Welcome! Your player ID is {message.PlayerID}.");
         bool host = false;
         if (message.PlayerID == 0)
@@ -480,7 +476,17 @@ public class ClientGameManager : MonoBehaviour
             gameObject.GetComponent<HostGameManager>().StartGame();
         }
 
-        GameStart();
+        //GameStart();
+        GameUI.SetActive(true);
+        SetOutputText(messagesText);
+
+        MessagesText.text = "";
+        DisableAllButtons();
+
+        ThisPlayer = new Player();
+        ThisPlayer.SetStartHP(ThisClient.StartHP);
+        ThisPlayer.TreasureAmount = 0;
+        SetHPTreasureText();
         SetOutputText(messagesText);
     }
 
@@ -500,7 +506,7 @@ public class ClientGameManager : MonoBehaviour
     public void LeaveRoom()
     {
         clientBehaviour.Disconnect();
-        Destroy(clientBehaviour.gameObject, 3f);
+        Destroy(clientBehaviour.gameObject, 1f);
     }
 
 }
