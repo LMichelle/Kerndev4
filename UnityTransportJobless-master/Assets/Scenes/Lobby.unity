@@ -4526,13 +4526,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9a48701fcebcfa243a51ce399cf1df16, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  fakeMonster: {fileID: 1929245797377357246, guid: f74e4e5bcd2797348a21c15a58ad4e99,
-    type: 3}
-  treasureGO: {fileID: 7710596114589387125, guid: 4f46bf8797e51b747a69f56275fccc44,
-    type: 3}
-  ExitGO: {fileID: 7098223705211656261, guid: f57265cc9ff7fbf4384b69d599da8746, type: 3}
-  gridGO: {fileID: 5574241064367834872, guid: 19bda411bc742e84192906889c95d1f6, type: 3}
-  testSpawnPlayersGO: {fileID: 7031989043103648479, guid: 6f2798b448b602c45b4fad84a15572df,
+  gridPrefab: {fileID: 5574241064367834872, guid: 19bda411bc742e84192906889c95d1f6,
     type: 3}
   minMonsterSpawnAmt: 4
   maxMonsterSpawnAmt: 8
@@ -6780,7 +6774,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &1249994453
 RectTransform:
   m_ObjectHideFlags: 0

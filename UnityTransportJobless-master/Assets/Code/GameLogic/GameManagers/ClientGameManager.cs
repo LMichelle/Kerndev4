@@ -21,6 +21,7 @@ public class ClientGameManager : MonoBehaviour
     private Button claimTreasureButton, attackButton, defendButton, exitDungeonButton;
     [SerializeField]
     private Button northButton, eastButton, southButton, westButton;
+
     
     [HideInInspector]
     public Client ThisClient { get; set; }

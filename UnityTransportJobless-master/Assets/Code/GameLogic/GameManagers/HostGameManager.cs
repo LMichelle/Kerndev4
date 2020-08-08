@@ -28,6 +28,8 @@ public class HostGameManager : MonoBehaviour
     [SerializeField]
     private int healAttackDmgSubtraction = -3;
 
+    
+
     private GridSystem grid;
     private ServerBehaviour server;
     private TurnManager turnManager = new TurnManager();
@@ -42,7 +44,7 @@ public class HostGameManager : MonoBehaviour
 
 
 
-    private void Start()
+    public void StartGame()
     {
         // Instantiate grid
         Instantiate(gridPrefab);
@@ -166,6 +168,7 @@ public class HostGameManager : MonoBehaviour
     }
 
     #region Send Game Messages
+    
 
     /// <summary>
     /// Send whose turn it is to all clients.

@@ -135,7 +135,10 @@ namespace Assets.Code
             client.name = "Client";
             client.tag = "Client";
 
-            // Update the UI
+            // Add the HostGameManager
+            gameObject.GetComponent<HostGameManager>().enabled = true;
+
+            // Update the UI to go to the Lobby
             lobbyUIGO.SetActive(true);
             hostUIGO.SetActive(true);
             gameObject.GetComponent<LobbyManager>().SetOutputText(hostMessagesText);
@@ -290,16 +293,16 @@ namespace Assets.Code
             Destroy(clientBehaviour.gameObject, 3f);
         }
 
-        /// <summary>
-        /// Starts the game and sends a message to the others
-        /// </summary>
-        public void SendStartGame()
-        {
-            var startGameMessage = new StartGameMessage { 
-                StartHP = (ushort)Random.Range(minPlayerHP, maxPlayerHP) 
-            };
-            clientBehaviour.SendMessage(startGameMessage);
-        }
+        ///// <summary>
+        ///// Starts the game and sends a message to the others
+        ///// </summary>
+        //public void SendStartGame()
+        //{
+        //    var startGameMessage = new StartGameMessage { 
+        //        StartHP = (ushort)Random.Range(minPlayerHP, maxPlayerHP) 
+        //    };
+        //    clientBehaviour.SendMessage(startGameMessage);
+        //}
 
         /// <summary>
         /// To not have the server disconnect after inactivity, send a 'none' message every 10 seconds.
@@ -317,6 +320,17 @@ namespace Assets.Code
 
                 yield return new WaitForSeconds(10f);
             }
+        }
+
+        /// <summary>
+        /// Starts the game and sends a message to the others
+        /// </summary>
+        public void SendStartGame()
+        {
+            var startGameMessage = new StartGameMessage {
+                StartHP = (ushort)Random.Range(minPlayerHP, maxPlayerHP)
+            };
+            clientBehaviour.SendMessage(startGameMessage);
         }
 
         #endregion
@@ -345,8 +359,8 @@ namespace Assets.Code
         private void StartGame() 
         {
             if (thisClient.Host)
-            { 
-                gameObject.GetComponent<HostGameManager>().enabled = true;
+            {
+                gameObject.GetComponent<HostGameManager>().StartGame();
             }
             gameObject.GetComponent<ClientGameManager>().enabled = true;
             gameObject.GetComponent<ClientGameManager>().StartGame(thisClient, AllClientsList);
