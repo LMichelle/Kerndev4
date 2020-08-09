@@ -21,14 +21,20 @@ namespace Assets.Code
         
         [SerializeField]
         private Text outputLogsText;
+
+
         [SerializeField]
         private Button hostGameButton, joinGameButton;
+
 
         private ClientBehaviour clientBehaviour;
 
         public Client thisClient;
-
-        public List<Client> AllClientsList { get; private set; } = new List<Client>();
+        private List<Client> allClientsList = new List<Client>();
+        public List<Client> AllClientsList { 
+            get { return allClientsList; } 
+            private set { allClientsList = value; } 
+        }
 
         private void Start()
         {
@@ -71,7 +77,7 @@ namespace Assets.Code
         /// Checks if the player login is valid and if so, continues to the game.
         /// </summary>
         /// <returns></returns>
-        private IEnumerator CheckData()
+        public IEnumerator CheckData()
         {
             yield return StartCoroutine(DatabaseManager.GetHTTP($"PlayerLoginServer.php?PHPSESSID={DatabaseManager.sessionID}&Email={usernameInputField.text}&Password={passwordInputField.text}"));
             if(DatabaseManager.response == "Invalid e-mail address.<br />") {
