@@ -6,7 +6,7 @@ using UnityEngine.Networking;
 namespace KernDev.NetworkBehaviour
 {
     /// <summary>
-    /// Thank you Geoffrey for showing me this code, I had no idea. Yes this is copied, but I do understand it.
+    /// Thank you Geoffrey for showing me this code!!
     /// </summary>
     public static class DatabaseManager
     {
