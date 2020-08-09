@@ -636,6 +636,8 @@ public class HostGameManager : MonoBehaviour
             UpdateInverseDictionary();
             AllClientPlayerDictionary.Remove(leavingClient);
             playerTurnList.Remove(leavingPlayer);
+            if (leavingPlayer == currentActivePlayer)
+                TurnExecution();
         }
     }
     #endregion

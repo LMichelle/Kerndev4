@@ -166,8 +166,8 @@ public class ClientGameManager : MonoBehaviour
                 Color color = Color.white;
                 foreach (Client c in AllClientsList)
                 {
-                    if (c.PlayerID == playerIDs[i]) ;
-                    color = ColorExtensions.ColorFromUInt(color, c.PlayerColour);
+                    if (c.PlayerID == playerIDs[i]) 
+                        color = ColorExtensions.ColorFromUInt(color, c.PlayerColour);
                 }
                 SetMessagesText(color, $"Player {playerIDs[i]} is in this room.");
             }
