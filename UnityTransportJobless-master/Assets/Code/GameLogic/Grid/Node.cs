@@ -20,17 +20,6 @@ namespace KernDev.GameLogic
             this.pos = pos;
         }
 
-        public int GetWalls()
-        {
-            int amountOfWalls = 0;
-            // bitwise operators; walls has to be true (not null) and wall.north e.g. has to be true. Since true is 1, and 1 != 0, the statement is true.
-            if ((walls & Wall.NORTH) != 0) { amountOfWalls++; }
-            if ((walls & Wall.EAST) != 0) { amountOfWalls++; }
-            if ((walls & Wall.SOUTH) != 0) { amountOfWalls++; }
-            if ((walls & Wall.WEST) != 0) { amountOfWalls++; }
-            return amountOfWalls;
-        }
-
         public Wall GetOpenDirection()
         {
             // Thank you Google

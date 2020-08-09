@@ -252,7 +252,7 @@ namespace KernDev.NetworkBehaviour
             ClientCallbacks[(int)MessageHeader.MessageType.NewPlayer].AddListener(ClientGameManager.ShowNewPlayerMessage);
             ClientCallbacks[(int)MessageHeader.MessageType.RequestDenied].AddListener(ClientGameManager.ShowRequestDeniedMessage);
             ClientCallbacks[(int)MessageHeader.MessageType.PlayerLeft].AddListener(ClientGameManager.ShowPlayerLeftMessage);
-            ClientCallbacks[(int)MessageHeader.MessageType.StartGame].AddListener(ClientGameManager.ShowStartGame);
+            ClientCallbacks[(int)MessageHeader.MessageType.StartGame].AddListener(ClientGameManager.ShowStartGameMessage);
 
             // Game Protocol
             ClientCallbacks[(int)MessageHeader.MessageType.PlayerTurn].AddListener(ClientGameManager.ShowPlayerTurnMessage);

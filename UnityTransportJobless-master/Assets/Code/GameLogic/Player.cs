@@ -6,7 +6,7 @@ namespace KernDev.GameLogic
 {    
     public class Opponent
     {
-        public int CurrentHP { get; internal set; }
+        public int CurrentHP { get; protected set; }
         public Node CurrentNode { get; set; }
         public int DamageAmount { get; set; }
         public bool Dead { get; private set; }

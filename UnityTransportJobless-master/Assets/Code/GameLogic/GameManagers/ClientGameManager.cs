@@ -18,9 +18,7 @@ public class ClientGameManager : MonoBehaviour
     [SerializeField]
     private GameObject GameUI;
     [SerializeField]
-    private Text messagesText;
-    [HideInInspector]
-    public Text MessagesText;
+    private Text gameMessagesText;
     [SerializeField]
     private Text HPTreasureText;
     [SerializeField]
@@ -28,8 +26,10 @@ public class ClientGameManager : MonoBehaviour
     [SerializeField]
     private Button northButton, eastButton, southButton, westButton;
 
+    [HideInInspector]
+    public Text MessagesText;
 
-    
+
     [HideInInspector]
     public Client ThisClient { get; set; }
     public Player ThisPlayer { get; set; }
@@ -48,7 +48,7 @@ public class ClientGameManager : MonoBehaviour
     public void GameStart()
     {
         GameUI.SetActive(true);
-        SetOutputText(messagesText, true);
+        SetOutputText(gameMessagesText, true);
         
         MessagesText.text = "";
         DisableAllButtons();
@@ -130,7 +130,7 @@ public class ClientGameManager : MonoBehaviour
 
     }
 
-    public void ShowStartGame(MessageConnection messageConnection)
+    public void ShowStartGameMessage(MessageConnection messageConnection)
     {
         var message = (messageConnection.messageHeader as StartGameMessage);
         ThisClient.StartHP = message.StartHP;
@@ -480,7 +480,7 @@ public class ClientGameManager : MonoBehaviour
 
         //GameStart();
         GameUI.SetActive(true);
-        SetOutputText(messagesText, true);
+        SetOutputText(gameMessagesText, true);
 
         MessagesText.text = "";
         DisableAllButtons();
@@ -489,7 +489,7 @@ public class ClientGameManager : MonoBehaviour
         ThisPlayer.SetStartHP(ThisClient.StartHP);
         ThisPlayer.TreasureAmount = 0;
         SetHPTreasureText();
-        SetOutputText(messagesText, true);
+        SetOutputText(gameMessagesText, true);
     }
 
     private IEnumerator Restart()
