@@ -257,7 +257,7 @@ namespace KernDev.NetworkBehaviour
                                 if (c.PlayerID != connections[i].InternalId)
                                     SendMessage(playerLeftMessage, c.Connection);
                             }
-                            
+                            HostGameManager.PlayerLeft(removeClient);
                             connections[i] = default;
                         }
                     }
@@ -367,20 +367,21 @@ namespace KernDev.NetworkBehaviour
 
         private void HandlePlayerLeft(MessageConnection message)
         {
-            Client removeClient = null;
-            foreach (Client c in ClientList)
-            {
-                if (c.Connection == message.connection)
-                {
-                    removeClient = c;
-                    break;
-                }
-            }
-            if (removeClient !=null)
-                ClientList.Remove(removeClient);
+            //Client removeClient = null;
+            //foreach (Client c in ClientList)
+            //{
+            //    if (c.Connection == message.connection)
+            //    {
+            //        removeClient = c;
+            //        break;
+            //    }
+            //}
+            //if (removeClient !=null)
+            //    ClientList.Remove(removeClient);
             
-            foreach (Client c in ClientList)
-                SendMessage(message.messageHeader, c.Connection);
+            //foreach (Client c in ClientList)
+            //    SendMessage(message.messageHeader, c.Connection);
+            
         }
 
         private void HandleNone(MessageConnection message)

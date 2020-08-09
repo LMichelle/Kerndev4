@@ -30,6 +30,7 @@ public class HostGameManager : MonoBehaviour
     [SerializeField]
     private int minPlayerHP = 30, maxPlayerHP = 50;
 
+    private bool gameStarted = false;
 
 
     private GridSystem grid;
@@ -81,6 +82,7 @@ public class HostGameManager : MonoBehaviour
         turnManager.Turn = ActiveClientPlayerDictionary.Count - 1;
         turnManager.FormerAmountOfPlayers = ActiveClientPlayerDictionary.Count;
         TurnExecution();
+        gameStarted = true;
     }
 
     #region Spawning
@@ -190,10 +192,11 @@ public class HostGameManager : MonoBehaviour
     {
         if (server != null)
         {
-            server.Disconnect();
             GameObject clientBehaviour = GameObject.FindGameObjectWithTag("Client");
-            Destroy(clientBehaviour, 2f);
-            Destroy(server, 3f);
+            Destroy(clientBehaviour.gameObject, .1f);
+            server.Disconnect();
+            Destroy(server.gameObject, .2f);
+            gameObject.GetComponent<SceneManagement>().ReloadScene();
         }
     }
 
@@ -618,6 +621,22 @@ public class HostGameManager : MonoBehaviour
         
 
         TurnExecution();
+    }
+
+    public void PlayerLeft(Client leavingClient)
+    {
+        if (gameStarted)
+        {
+            // remove client from the 2 active clients dictionary & remove from allClient
+            Debug.Log("Removing client");
+            Player leavingPlayer = null;
+            ActiveClientPlayerDictionary.TryGetValue(leavingClient, out leavingPlayer);
+            
+            ActiveClientPlayerDictionary.Remove(leavingClient);
+            UpdateInverseDictionary();
+            AllClientPlayerDictionary.Remove(leavingClient);
+            playerTurnList.Remove(leavingPlayer);
+        }
     }
     #endregion
 

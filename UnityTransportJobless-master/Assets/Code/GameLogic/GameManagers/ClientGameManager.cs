@@ -48,7 +48,7 @@ public class ClientGameManager : MonoBehaviour
     public void GameStart()
     {
         GameUI.SetActive(true);
-        SetOutputText(messagesText);
+        SetOutputText(messagesText, true);
         
         MessagesText.text = "";
         DisableAllButtons();
@@ -431,9 +431,11 @@ public class ClientGameManager : MonoBehaviour
             $"Gold: {ThisPlayer.TreasureAmount}";
     }
 
-    public void SetOutputText(Text text)
+    public void SetOutputText(Text text, bool resetHeight)
     {
         MessagesText = text;
+        if (resetHeight)
+            MessagesText.rectTransform.sizeDelta = Vector2.zero;
     }
 
     private void SetMessagesText(Color32 color, string text)
@@ -478,7 +480,7 @@ public class ClientGameManager : MonoBehaviour
 
         //GameStart();
         GameUI.SetActive(true);
-        SetOutputText(messagesText);
+        SetOutputText(messagesText, true);
 
         MessagesText.text = "";
         DisableAllButtons();
@@ -487,7 +489,7 @@ public class ClientGameManager : MonoBehaviour
         ThisPlayer.SetStartHP(ThisClient.StartHP);
         ThisPlayer.TreasureAmount = 0;
         SetHPTreasureText();
-        SetOutputText(messagesText);
+        SetOutputText(messagesText, true);
     }
 
     private IEnumerator Restart()
@@ -506,7 +508,7 @@ public class ClientGameManager : MonoBehaviour
     public void LeaveRoom()
     {
         clientBehaviour.Disconnect();
-        Destroy(clientBehaviour.gameObject, 1f);
+        Destroy(clientBehaviour.gameObject, .1f);
     }
 
 }

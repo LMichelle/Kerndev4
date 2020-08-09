@@ -134,7 +134,7 @@ namespace Assets.Code
             client.name = "Client";
             client.tag = "Client";
             gameObject.GetComponent<ClientGameManager>().enabled = true;
-            gameObject.GetComponent<ClientGameManager>().SetOutputText(hostMessagesText);
+            gameObject.GetComponent<ClientGameManager>().SetOutputText(hostMessagesText, true);
             gameObject.GetComponent<ClientGameManager>().StartClientGameManager();
 
             clientBehaviour.ClientStart(ipInputField.text);
@@ -169,7 +169,7 @@ namespace Assets.Code
             client.name = "Client";
 
             gameObject.GetComponent<ClientGameManager>().enabled = true;
-            gameObject.GetComponent<ClientGameManager>().SetOutputText(joinMessagesText);
+            gameObject.GetComponent<ClientGameManager>().SetOutputText(joinMessagesText, true);
             gameObject.GetComponent<ClientGameManager>().StartClientGameManager();
             
             clientBehaviour.ClientStart(ipInputField.text);
